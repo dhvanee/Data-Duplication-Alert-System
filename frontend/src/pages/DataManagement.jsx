@@ -10,14 +10,27 @@ import {
   X,
   ChevronUp,
   ChevronDown,
-  Settings
+  Settings2,
+  ArrowUpDown,
+  Filter,
+  RefreshCw
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select";
 import EditRecordForm from '../components/ui/EditRecordForm';
 import Loading from '../components/ui/loading';
 import { useToast } from '../hooks/use-toast';
@@ -153,11 +166,19 @@ const DataManagement = () => {
       const allowedTypes = ['csv', 'xlsx', 'xls', 'pdf'];
       
       if (!allowedTypes.includes(fileType)) {
-        alert('Please upload a CSV, Excel, or PDF file');
+        toast({
+          title: "Invalid File Type",
+          description: "Please upload a CSV, Excel, or PDF file",
+          variant: "destructive",
+        });
         return;
       }
       
       setSelectedFile(file);
+      toast({
+        title: "File Selected",
+        description: `Selected file: ${file.name}`,
+      });
     }
   };
 
@@ -173,6 +194,7 @@ const DataManagement = () => {
   const processImportedFile = async () => {
     if (!selectedFile) return;
 
+    setLoading(true);
     const fileType = selectedFile.name.split('.').pop().toLowerCase();
     
     try {
@@ -200,404 +222,315 @@ const DataManagement = () => {
             setRecords(prev => [...prev, ...newRecords]);
             setShowImportModal(false);
             setSelectedFile(null);
-            alert('CSV file imported successfully!');
+            toast({
+              title: "Import Successful",
+              description: `${newRecords.length} records imported successfully!`,
+            });
           } catch (error) {
             console.error('Error parsing CSV:', error);
-            alert('Error parsing CSV file. Please check the file format.');
+            toast({
+              title: "Import Failed",
+              description: "Error parsing CSV file. Please check the file format.",
+              variant: "destructive",
+            });
           }
         };
         reader.onerror = () => {
-          alert('Error reading file. Please try again.');
+          toast({
+            title: "Import Failed",
+            description: "Error reading file. Please try again.",
+            variant: "destructive",
+          });
         };
         reader.readAsText(selectedFile);
-      } else if (fileType === 'xlsx' || fileType === 'xls') {
-        alert('Excel file processing will be implemented soon. Please use CSV format for now.');
-      } else if (fileType === 'pdf') {
-        alert('PDF processing will be implemented soon. Please use CSV format for now.');
+      } else {
+        toast({
+          title: "Unsupported Format",
+          description: `${fileType.toUpperCase()} processing will be implemented soon. Please use CSV format for now.`,
+        });
       }
     } catch (error) {
       console.error('Error processing file:', error);
-      alert('Error processing file. Please try again.');
+      toast({
+        title: "Import Failed",
+        description: "Error processing file. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
   // Handle export
   const handleExport = (format) => {
-    const data = records.map(record => ({
-      ID: record.id,
-      Name: record.name,
-      Email: record.email,
-      Phone: record.phone,
-      City: record.city,
-      Status: record.status,
-      ...(record.fileType && { FileType: record.fileType }),
-      ...(record.size && { Size: record.size }),
-      ...(record.lastModified && { LastModified: record.lastModified })
-    }));
-
-    if (format === 'csv') {
-      const headers = ['ID', 'Name', 'Email', 'Phone', 'City', 'Status', 'FileType', 'Size', 'LastModified'];
-      const csvContent = [
-        headers.join(','),
-        ...data.map(row => headers.map(header => row[header] || '').join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-export.csv';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } else if (format === 'json') {
-      const jsonContent = JSON.stringify(data, null, 2);
-      const blob = new Blob([jsonContent], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-export.json';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } else if (format === 'txt') {
-      const textContent = data.map(record => 
-        Object.entries(record)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join('\n')
-      ).join('\n\n---\n\n');
-
-      const blob = new Blob([textContent], { type: 'text/plain' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-export.txt';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } else if (format === 'html') {
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Data Export</title>
-          <style>
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #f2f2f2; }
-            tr:nth-child(even) { background-color: #f9f9f9; }
-          </style>
-        </head>
-        <body>
-          <h1>Exported Data</h1>
-          <table>
-            <thead>
-              <tr>
-                ${Object.keys(data[0] || {}).map(header => `<th>${header}</th>`).join('')}
-              </tr>
-            </thead>
-            <tbody>
-              ${data.map(record => `
-                <tr>
-                  ${Object.values(record).map(value => `<td>${value}</td>`).join('')}
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </body>
-        </html>
-      `;
-
-      const blob = new Blob([htmlContent], { type: 'text/html' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'data-export.html';
-      a.click();
-      window.URL.revokeObjectURL(url);
-    }
-  };
-
-  // Handle add new record
-  const handleAddRecord = (e) => {
-    e.preventDefault();
-    const newId = Math.max(...records.map(r => r.id)) + 1;
-    setRecords([
-      ...records,
-      {
-        id: newId,
-        ...newRecord,
-        status: 'Pending'
-      }
-    ]);
-    setNewRecord({
-      name: '',
-      email: '',
-      phone: '',
-      city: '',
-    });
-    setShowAddModal(false);
-  };
-
-  // Handle edit record
-  const handleEdit = (id) => {
-    const recordToEdit = records.find(record => record.id === id);
-    setEditingRecord(recordToEdit);
-  };
-
-  // Handle delete record
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this record?')) {
-      setIsDeleting(true);
+    setLoading(true);
+    setTimeout(() => {
       try {
-        setTimeout(() => {
-          setRecords(records.filter(record => record.id !== id));
+        const data = records.map(record => ({
+          ID: record.id,
+          Name: record.name,
+          Email: record.email,
+          Phone: record.phone,
+          City: record.city,
+          Status: record.status
+        }));
+
+        if (format === 'csv') {
+          const headers = ['ID', 'Name', 'Email', 'Phone', 'City', 'Status'];
+          const csvContent = [
+            headers.join(','),
+            ...data.map(row => headers.map(header => row[header] || '').join(','))
+          ].join('\n');
+
+          const blob = new Blob([csvContent], { type: 'text/csv' });
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'data-export.csv';
+          a.click();
+
           toast({
-            title: "Success",
-            description: "Record deleted successfully",
-            variant: "success",
+            title: "Export Successful",
+            description: "Records exported to CSV successfully!",
           });
-          setIsDeleting(false);
-        }, 500);
+        } else {
+          toast({
+            title: "Export Failed",
+            description: `${format.toUpperCase()} export not implemented yet.`,
+            variant: "destructive",
+          });
+        }
       } catch (error) {
+        console.error('Error exporting data:', error);
         toast({
-          title: "Error",
-          description: "Failed to delete record",
+          title: "Export Failed",
+          description: "Error exporting data. Please try again.",
           variant: "destructive",
         });
-        setIsDeleting(false);
+      } finally {
+        setLoading(false);
       }
-    }
-  };
-
-  // Handle edit save
-  const handleEditSave = (e) => {
-    e.preventDefault();
-    setRecords(prev => prev.map(record => 
-      record.id === editingRecord.id ? editingRecord : record
-    ));
-    setShowEditModal(false);
-    setEditingRecord(null);
-  };
-
-  // Column visibility toggle
-  const toggleColumn = (columnKey) => {
-    setVisibleColumns(prev => ({
-      ...prev,
-      [columnKey]: !prev[columnKey]
-    }));
-  };
-
-  // Render sort indicator
-  const SortIndicator = ({ columnKey }) => {
-    if (sortConfig.key !== columnKey) {
-      return <ChevronUp className="w-4 h-4 opacity-0 group-hover:opacity-50" />;
-    }
-    return (
-      <div className={`transition-transform duration-200 ${isSorting ? 'animate-pulse' : ''}`}>
-        {sortConfig.direction === 'asc' 
-          ? <ChevronUp className="w-4 h-4" />
-          : <ChevronDown className="w-4 h-4" />}
-      </div>
-    );
+    }, 500);
   };
 
   if (loading) {
-    return (
-      <div className="fixed inset-0 bg-white bg-opacity-75 flex items-center justify-center z-50">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-blue-200 border-solid rounded-full animate-spin"></div>
-          <div className="absolute top-0 left-0 w-16 h-16 border-4 border-blue-600 border-t-transparent border-solid rounded-full animate-spin"></div>
-          <div className="mt-4 text-blue-600 text-center font-semibold">Loading...</div>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
-  const columns = [
-    { key: 'id', label: 'ID' },
-    { key: 'name', label: 'NAME' },
-    { key: 'email', label: 'EMAIL' },
-    { key: 'phone', label: 'PHONE' },
-    { key: 'city', label: 'CITY' },
-    { key: 'status', label: 'STATUS' }
-  ];
-
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
+    <div className="p-6 max-w-7xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
+        <div className="space-y-1">
           <h1 className="text-2xl font-semibold text-gray-900">Data Management</h1>
-          <p className="text-sm text-gray-600">Manage your data records, import new data, and identify duplicates.</p>
+          <p className="text-sm text-gray-500">
+            Import, manage, and export your data
+          </p>
         </div>
-        <div className="flex items-center space-x-4">
-          <button
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            className="flex items-center gap-2"
             onClick={() => setShowImportModal(true)}
-            className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
           >
-            <Upload className="w-4 h-4 mr-2" />
+            <Upload className="w-4 h-4" />
             Import
-          </button>
+          </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
                 Export
-              </button>
+              </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent>
+            <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => handleExport('csv')}>
                 <FileSpreadsheet className="w-4 h-4 mr-2" />
                 Export as CSV
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('json')}>
-                <File className="w-4 h-4 mr-2" />
-                Export as JSON
+              <DropdownMenuItem onClick={() => handleExport('xlsx')}>
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export as Excel
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('txt')}>
+              <DropdownMenuItem onClick={() => handleExport('pdf')}>
                 <File className="w-4 h-4 mr-2" />
-                Export as Text
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('html')}>
-                <File className="w-4 h-4 mr-2" />
-                Export as HTML
+                Export as PDF
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <button
+          <Button
+            variant="default"
+            className="flex items-center gap-2"
             onClick={() => setShowAddModal(true)}
-            className="flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus className="w-4 h-4" />
             Add Record
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search records..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex gap-4 items-center">
+            <div className="flex-1 max-w-sm">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search records..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Records</SelectItem>
+                <SelectItem value="Unique">Unique</SelectItem>
+                <SelectItem value="Potential Duplicate">Potential Duplicates</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => {
+                setLoading(true);
+                setTimeout(() => {
+                  setRecords([...records]);
+                  setLoading(false);
+                  toast({
+                    title: "Records Refreshed",
+                    description: "The data has been refreshed.",
+                  });
+                }, 1000);
+              }}
+              className="shrink-0"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </Button>
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="ml-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="all">All Status</option>
-            <option value="Unique">Unique</option>
-            <option value="Potential Duplicate">Potential Duplicate</option>
-          </select>
-          <select
-            value={recordsPerPage}
-            onChange={(e) => setRecordsPerPage(Number(e.target.value))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value={5}>5 per page</option>
-            <option value={10}>10 per page</option>
-            <option value={25}>25 per page</option>
-            <option value={50}>50 per page</option>
-          </select>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <Settings className="w-5 h-5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-48">
-              {columns.map(column => (
-                <DropdownMenuItem
-                  key={column.key}
-                  onClick={() => toggleColumn(column.key)}
-                  className="flex items-center space-x-2"
-                >
-                  <input
-                    type="checkbox"
-                    checked={visibleColumns[column.key]}
-                    onChange={() => {}}
-                    className="rounded border-gray-300"
-                  />
-                  <span>{column.label}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
-      </div>
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {columns.map(column => (
-                  visibleColumns[column.key] && (
-                    <th
-                      key={column.key}
-                      onClick={() => handleSort(column.key)}
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer group"
-                    >
-                      <div className="flex items-center">
-                        {column.label}
-                        <SortIndicator columnKey={column.key} />
-                      </div>
-                    </th>
-                  )
-                ))}
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ACTIONS</th>
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    className="flex items-center gap-1 hover:text-gray-700"
+                    onClick={() => handleSort('name')}
+                  >
+                    Name
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    className="flex items-center gap-1 hover:text-gray-700"
+                    onClick={() => handleSort('email')}
+                  >
+                    Email
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    className="flex items-center gap-1 hover:text-gray-700"
+                    onClick={() => handleSort('phone')}
+                  >
+                    Phone
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    className="flex items-center gap-1 hover:text-gray-700"
+                    onClick={() => handleSort('city')}
+                  >
+                    City
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <button
+                    className="flex items-center gap-1 hover:text-gray-700"
+                    onClick={() => handleSort('status')}
+                  >
+                    Status
+                    <ArrowUpDown className="w-4 h-4" />
+                  </button>
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {currentRecords.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  {visibleColumns.id && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.id}</td>
-                  )}
-                  {visibleColumns.name && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.name}</td>
-                  )}
-                  {visibleColumns.email && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.email}</td>
-                  )}
-                  {visibleColumns.phone && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.phone}</td>
-                  )}
-                  {visibleColumns.city && (
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.city}</td>
-                  )}
-                  {visibleColumns.status && (
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        record.status === 'Unique' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {record.status}
-                      </span>
-                    </td>
-                  )}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <tr
+                  key={record.id}
+                  className="hover:bg-gray-50 transition-colors"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">{record.name}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{record.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{record.phone}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">{record.city}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      record.status === 'Unique'
+                        ? 'bg-green-100 text-green-800'
+                        : record.status === 'Potential Duplicate'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {record.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <button className="p-1 hover:bg-gray-100 rounded-full">
+                        <Button variant="ghost" size="icon">
                           <MoreVertical className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
-                          onClick={() => handleEdit(record.id)}
-                          disabled={isDeleting}
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditingRecord(record);
+                            setShowEditModal(true);
+                          }}
                         >
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
-                          onClick={() => handleDelete(record.id)}
-                          disabled={isDeleting}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
                           className="text-red-600"
+                          onClick={() => {
+                            if (window.confirm('Are you sure you want to delete this record?')) {
+                              setIsDeleting(true);
+                              setTimeout(() => {
+                                setRecords(records.filter(r => r.id !== record.id));
+                                setIsDeleting(false);
+                                toast({
+                                  title: "Record Deleted",
+                                  description: "The record has been deleted successfully.",
+                                  variant: "destructive",
+                                });
+                              }, 500);
+                            }
+                          }}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -609,240 +542,188 @@ const DataManagement = () => {
             </tbody>
           </table>
         </div>
-        
-        <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-          <div className="text-sm text-gray-700">
-            Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, filteredRecords.length)} of {filteredRecords.length} records
+
+        {currentRecords.length === 0 && (
+          <div className="p-8 text-center">
+            <div className="mx-auto w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-4">
+              <Search className="w-6 h-6 text-gray-400" />
+            </div>
+            <h3 className="text-sm font-medium text-gray-900">No records found</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Try adjusting your search or filter to find what you're looking for
+            </p>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex space-x-2">
-              <button
+        )}
+
+        <div className="px-6 py-4 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-700">
+                Showing {indexOfFirstRecord + 1} to {Math.min(indexOfLastRecord, filteredRecords.length)} of {filteredRecords.length} records
+              </span>
+              <Select
+                value={recordsPerPage.toString()}
+                onValueChange={(value) => {
+                  setRecordsPerPage(parseInt(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-20">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-700">per page</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
               >
                 Previous
-              </button>
-              <div className="flex items-center space-x-1">
-                <input
-                  type="number"
-                  min={1}
-                  max={totalPages}
-                  value={currentPage}
-                  onChange={(e) => {
-                    const page = Math.min(Math.max(1, parseInt(e.target.value) || 1), totalPages);
-                    setCurrentPage(page);
-                  }}
-                  className="w-16 px-2 py-1 border border-gray-300 rounded-md"
-                />
-                <span className="text-gray-600">of {totalPages}</span>
-              </div>
-              <button
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-gray-300 rounded-md disabled:opacity-50"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Add Record Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Add New Record</h2>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <form onSubmit={handleAddRecord}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={newRecord.name}
-                    onChange={(e) => setNewRecord({ ...newRecord, name: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <input
-                    type="email"
-                    required
-                    value={newRecord.email}
-                    onChange={(e) => setNewRecord({ ...newRecord, email: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Phone</label>
-                  <input
-                    type="tel"
-                    required
-                    value={newRecord.phone}
-                    onChange={(e) => setNewRecord({ ...newRecord, phone: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">City</label>
-                  <input
-                    type="text"
-                    required
-                    value={newRecord.city}
-                    onChange={(e) => setNewRecord({ ...newRecord, city: e.target.value })}
-                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-                >
-                  Add Record
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EditRecordForm
+          onClose={() => setShowAddModal(false)}
+          onSave={(record) => {
+            setRecords([...records, { ...record, id: records.length + 1, status: 'Pending' }]);
+            setShowAddModal(false);
+            toast({
+              title: "Record Added",
+              description: "The new record has been added successfully.",
+            });
+          }}
+        />
       )}
 
-      {/* Import Modal */}
+      {showEditModal && editingRecord && (
+        <EditRecordForm
+          record={editingRecord}
+          onClose={() => {
+            setShowEditModal(false);
+            setEditingRecord(null);
+          }}
+          onSave={(updatedRecord) => {
+            setRecords(records.map(r => r.id === updatedRecord.id ? updatedRecord : r));
+            setShowEditModal(false);
+            setEditingRecord(null);
+            toast({
+              title: "Record Updated",
+              description: "The record has been updated successfully.",
+            });
+          }}
+        />
+      )}
+
       {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Import Data</h2>
-              <button onClick={() => setShowImportModal(false)} className="text-gray-500 hover:text-gray-700">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center transition-colors duration-200 hover:border-blue-500"
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.currentTarget.classList.add('border-blue-500');
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.currentTarget.classList.remove('border-blue-500');
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.currentTarget.classList.remove('border-blue-500');
-                  const files = e.dataTransfer.files;
-                  if (files.length) {
-                    const file = files[0];
-                    const fileType = file.name.split('.').pop().toLowerCase();
-                    const allowedTypes = ['csv', 'xlsx', 'xls', 'pdf'];
-                    if (allowedTypes.includes(fileType)) {
-                      setSelectedFile(file);
-                    } else {
-                      alert('Please upload a CSV, Excel, or PDF file');
-                    }
-                  }
+              <h3 className="text-lg font-medium">Import Data</h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setShowImportModal(false);
+                  setSelectedFile(null);
                 }}
               >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div
+              className="border-2 border-dashed rounded-lg p-8 text-center mb-4"
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+            >
+              <div className="space-y-4">
+                <div className="mx-auto w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                  <Upload className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Drag and drop your file here
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    or click to browse from your computer
+                  </p>
+                </div>
                 <input
                   type="file"
-                  accept="*/*"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      setSelectedFile(file);
-                    }
-                  }}
+                  accept=".csv,.xlsx,.xls,.pdf"
+                  onChange={handleFileImport}
                   className="hidden"
                   id="file-upload"
                 />
-                <label
-                  htmlFor="file-upload"
-                  className="cursor-pointer flex flex-col items-center space-y-2"
+                <Button
+                  variant="outline"
+                  onClick={() => document.getElementById('file-upload').click()}
                 >
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm text-gray-600">Click to upload or drag and drop</span>
-                  <span className="text-xs text-gray-500">All file types are supported</span>
-                </label>
+                  Browse Files
+                </Button>
               </div>
-              {selectedFile && (
-                <div className="flex items-center justify-between bg-gray-50 p-3 rounded">
-                  <div className="flex items-center">
-                    <FileSpreadsheet className="w-5 h-5 text-gray-500 mr-2" />
-                    <span className="text-sm text-gray-700">{selectedFile.name}</span>
-                  </div>
-                  <button
-                    onClick={() => setSelectedFile(null)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
             </div>
-            <div className="mt-6 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
+            {selectedFile && (
+              <div className="flex items-center justify-between bg-gray-50 p-3 rounded-lg mb-4">
+                <div className="flex items-center gap-3">
+                  <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-500">
+                      {(selectedFile.size / 1024).toFixed(2)} KB
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setSelectedFile(null)}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
                 onClick={() => {
-                  if (!selectedFile) return;
-
-                  // Create a record from the file metadata
-                  const newRecord = {
-                    id: records.length + 1,
-                    name: selectedFile.name,
-                    email: 'file@system.local',
-                    phone: '-',
-                    city: '-',
-                    status: 'Imported',
-                    fileType: selectedFile.type || 'application/octet-stream',
-                    size: `${(selectedFile.size / 1024).toFixed(2)} KB`,
-                    lastModified: new Date(selectedFile.lastModified).toLocaleDateString()
-                  };
-
-                  setRecords(prev => [...prev, newRecord]);
                   setShowImportModal(false);
                   setSelectedFile(null);
-                  alert('File imported successfully!');
                 }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                onClick={processImportedFile}
                 disabled={!selectedFile}
               >
                 Import Data
-              </button>
+              </Button>
             </div>
           </div>
         </div>
-      )}
-
-      {editingRecord && (
-        <EditRecordForm
-          record={editingRecord}
-          onSave={handleEditSave}
-          onCancel={() => setEditingRecord(null)}
-        />
       )}
     </div>
   );

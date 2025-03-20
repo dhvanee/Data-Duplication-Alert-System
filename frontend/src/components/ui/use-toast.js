@@ -47,7 +47,7 @@ export const reducer = (state, action) => {
       return {
         ...state,
         toasts: state.toasts.map((t) =>
-          t.id === action.toast.id ? { ...t, ...action.toast } : t
+          t.id === action.toastId ? { ...t, ...action.toast } : t
         ),
       }
 
@@ -100,13 +100,14 @@ function dispatch(action) {
   })
 }
 
-function toast({ ...props }) {
+export function toast({ ...props }) {
   const id = genId()
 
   const update = (props) =>
     dispatch({
       type: actionTypes.UPDATE_TOAST,
-      toast: { ...props, id },
+      toast: { ...props },
+      toastId: id,
     })
   const dismiss = () => dispatch({ type: actionTypes.DISMISS_TOAST, toastId: id })
 
