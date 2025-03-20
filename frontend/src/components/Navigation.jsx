@@ -16,8 +16,8 @@ const Navigation = () => {
           
           <nav className="nav-menu">
             <Link
-              to="/"
-              className={cn('nav-link', isActive('/') && 'active')}
+              to="/dashboard"
+              className={cn('nav-link', isActive('/dashboard') && 'active')}
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -77,14 +77,14 @@ const Navigation = () => {
           </button>
 
           <Link to="/profile" className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
-              <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
             </div>
             <div className="text-sm">
-              <div className="font-medium">John Anderson</div>
-              <div className="text-white/50 text-xs">Admin</div>
+              <div className="font-medium text-gray-700">John Anderson</div>
+              <div className="text-gray-500 text-xs">Admin</div>
             </div>
           </Link>
         </div>
