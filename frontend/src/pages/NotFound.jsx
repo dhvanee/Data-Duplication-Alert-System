@@ -1,31 +1,24 @@
-
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { Link } from 'react-router-dom';
 
 const NotFound = () => {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="glass-card p-10 text-center max-w-md mx-auto animate-scale-in">
-        <div className="text-6xl font-bold mb-4">404</div>
-        <h1 className="text-2xl font-semibold mb-4">Page not found</h1>
-        <p className="text-muted-foreground mb-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <h1 className="text-9xl font-bold text-blue-600">404</h1>
+        <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900">
+          Page not found
+        </h2>
+        <p className="mt-4 text-base text-gray-600">
           The page you are looking for doesn't exist or has been moved.
         </p>
-        <a 
-          href="/" 
-          className="bg-primary text-primary-foreground px-6 py-3 rounded-xl inline-block font-medium hover-scale"
-        >
-          Return to Dashboard
-        </a>
+        <div className="mt-6">
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+          >
+            Return to Dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );

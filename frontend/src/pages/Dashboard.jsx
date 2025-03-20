@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,6 +29,35 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    duplicateRecords: 0,
+    resolvedDuplicates: 0,
+    lastUpdated: null
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/records/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
   const duplicateTrendsData = {
     labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
     datasets: [
@@ -143,7 +172,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">Total Records</div>
-                <div className="text-2xl font-semibold text-gray-900">475</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.totalRecords}</div>
               </div>
             </div>
           </div>
@@ -156,7 +185,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">Duplicate Records</div>
-                <div className="text-2xl font-semibold text-gray-900">75</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.duplicateRecords}</div>
               </div>
             </div>
           </div>
@@ -169,7 +198,7 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">Resolved Duplicates</div>
-                <div className="text-2xl font-semibold text-gray-900">30</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.resolvedDuplicates}</div>
               </div>
             </div>
           </div>
@@ -182,7 +211,9 @@ const Dashboard = () => {
               </div>
               <div>
                 <div className="text-sm text-gray-600">Last Updated</div>
-                <div className="text-2xl font-semibold text-gray-900">2h ago</div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  {stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Never'}
+                </div>
               </div>
             </div>
           </div>

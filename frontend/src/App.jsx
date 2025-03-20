@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
@@ -14,6 +14,7 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+import Layout from './components/Layout';
 
 const queryClient = new QueryClient();
 
@@ -22,30 +23,26 @@ const App = () => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route
-            path="*"
-            element={
-              <div className="min-h-screen bg-gray-50">
-                <Navigation />
-                <main className="page-container">
-                  <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/data" element={<DataManagement />} />
-                    <Route path="/duplicates" element={<DataDuplication />} />
-                    <Route path="/settings" element={<Settings />} />
-                    <Route path="/help" element={<Help />} />
-                    <Route path="/profile" element={<Profile />} />
-                    <Route path="/sign-in" element={<SignIn />} />
-                    <Route path="/sign-up" element={<SignUp />} />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </main>
-              </div>
-            }
-          />
+          {/* Public Routes */}
+          <Route path="/" element={<Navigate to="/signin" />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          
+          {/* Protected Routes */}
+          <Route path="/app" element={<Layout />}>
+            <Route index element={<Navigate to="/app/dashboard" />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="data-management" element={<DataManagement />} />
+            <Route path="duplicates" element={<DataDuplication />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+
+          {/* 404 Route */}
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </QueryClientProvider>
   );
 };
