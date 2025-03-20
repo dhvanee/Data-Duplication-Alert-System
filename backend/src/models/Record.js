@@ -14,28 +14,41 @@ const recordSchema = new mongoose.Schema({
   },
   phone: {
     type: String,
-    required: true,
     trim: true
   },
-  city: {
+  address: {
     type: String,
-    required: true,
     trim: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   },
   status: {
     type: String,
-    enum: ['unique', 'potential_duplicate', 'confirmed_duplicate'],
-    default: 'unique'
+    enum: ['active', 'inactive', 'duplicate'],
+    default: 'active'
+  },
+  duplicateOf: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Record',
+    default: null
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
   }
 });
 
-export default mongoose.model('Record', recordSchema); 
+// Update the updatedAt timestamp before saving
+recordSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+export const Record = mongoose.model('Record', recordSchema); 

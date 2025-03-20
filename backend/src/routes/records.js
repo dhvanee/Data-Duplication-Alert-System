@@ -1,18 +1,99 @@
 import express from 'express';
+import multer from 'multer';
 import { auth } from '../middleware/auth.js';
-import Record from '../models/Record.js';
+import * as XLSX from 'xlsx';
+import { Record } from '../models/Record.js';
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
+
+// Upload data
+router.post('/upload', auth, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const workbook = XLSX.readFile(req.file.path);
+    const sheetName = workbook.SheetNames[0];
+    const records = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    await Record.insertMany(records);
+
+    res.json({ message: 'File uploaded successfully', count: records.length });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ message: 'Error uploading file', error: error.message });
+  }
+});
+
+// Export data
+router.get('/export', auth, async (req, res) => {
+  try {
+    const records = await Record.find({});
+    const worksheet = XLSX.utils.json_to_sheet(records);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=ddas-export-${Date.now()}.xlsx`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Export error:', error);
+    res.status(500).json({ message: 'Error exporting data', error: error.message });
+  }
+});
+
+// Get duplicates
+router.get('/duplicates', auth, async (req, res) => {
+  try {
+    const records = await Record.find({});
+    const duplicates = findDuplicates(records);
+    res.json(duplicates);
+  } catch (error) {
+    console.error('Duplicates error:', error);
+    res.status(500).json({ message: 'Error fetching duplicates', error: error.message });
+  }
+});
 
 // Get all records
 router.get('/', auth, async (req, res) => {
   try {
-    const records = await Record.find({ createdBy: req.user._id });
+    const records = await Record.find({});
     res.json(records);
   } catch (error) {
+    console.error('Records error:', error);
     res.status(500).json({ message: 'Error fetching records', error: error.message });
   }
 });
+
+// Helper function to find duplicates
+function findDuplicates(records) {
+  const duplicates = [];
+  const seen = new Map();
+
+  records.forEach(record => {
+    const key = generateDuplicateKey(record);
+    if (seen.has(key)) {
+      duplicates.push({
+        original: seen.get(key),
+        duplicate: record
+      });
+    } else {
+      seen.set(key, record);
+    }
+  });
+
+  return duplicates;
+}
+
+// Helper function to generate duplicate key
+function generateDuplicateKey(record) {
+  // Customize this based on your duplicate detection criteria
+  return `${record.name?.toLowerCase()}-${record.email?.toLowerCase()}`;
+}
 
 // Add new record
 router.post('/', auth, async (req, res) => {

@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute';
 
 const queryClient = new QueryClient();
 
@@ -29,7 +30,14 @@ const App = () => {
           <Route path="/signup" element={<SignUp />} />
           
           {/* Protected Routes */}
-          <Route path="/app" element={<Layout />}>
+          <Route
+            path="/app"
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
             <Route index element={<Navigate to="/app/dashboard" />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="data-management" element={<DataManagement />} />
@@ -39,10 +47,10 @@ const App = () => {
           </Route>
 
           {/* 404 Route */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/app/dashboard" />} />
         </Routes>
+        <Toaster />
       </BrowserRouter>
-      <Toaster />
     </QueryClientProvider>
   );
 };

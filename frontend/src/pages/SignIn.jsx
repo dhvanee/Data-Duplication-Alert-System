@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS, API_CONFIG, checkServerHealth } from '../config/api';
 import { toast } from '../components/ui/use-toast';
+import { login } from '../services/authService';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -49,33 +50,8 @@ const SignIn = () => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login with:', { email: formData.email });
+      await login(formData.email, formData.password);
       
-      const response = await fetch(API_ENDPOINTS.LOGIN, {
-        method: 'POST',
-        ...API_CONFIG,
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Check if the user doesn't exist
-        if (response.status === 401) {
-          throw new Error('Invalid email or password');
-        }
-        throw new Error(data.message || 'Failed to sign in');
-      }
-
-      // Store token and user data
-      localStorage.setItem('token', data.token);
-      if (formData.rememberMe) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-
       toast({
         title: "Success!",
         description: "Signed in successfully",

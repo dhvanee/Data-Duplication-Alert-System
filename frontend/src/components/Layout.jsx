@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { toast } from './ui/use-toast';
 
@@ -10,11 +10,21 @@ const Layout = () => {
   const location = useLocation();
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
+    
+    if (!token || !userData) {
+      navigate('/signin');
+      return;
     }
-  }, []);
+    
+    setUser(JSON.parse(userData));
+  }, [navigate]);
+
+  // If no token, redirect to signin
+  if (!localStorage.getItem('token')) {
+    return <Navigate to="/signin" />;
+  }
 
   const handleLogout = () => {
     localStorage.removeItem('token');
