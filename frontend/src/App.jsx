@@ -16,6 +16,8 @@ import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
 import Layout from './components/Layout';
 import PrivateRoute from './components/PrivateRoute';
+import DataRepository from "./pages/DataRepository";
+import DatasetUpload from "./pages/DatasetUpload";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +46,8 @@ const App = () => {
             <Route path="duplicates" element={<DataDuplication />} />
             <Route path="settings" element={<Settings />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="repository" element={<DataRepository />} />
+            <Route path="upload" element={<DatasetUpload />} />
           </Route>
 
           {/* 404 Route */}

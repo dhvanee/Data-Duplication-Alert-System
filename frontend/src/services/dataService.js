@@ -1,4 +1,4 @@
-import { API_BASE_URL, API_CONFIG } from '../config/api';
+import { API_BASE_URL, API_CONFIG, API_ENDPOINTS, getAuthHeaders } from '../config/api';
 
 // Upload Data function
 export const uploadData = async (file) => {
@@ -40,18 +40,82 @@ export const exportReport = async () => {
   document.body.removeChild(a);
 };
 
-// Review Duplicates function
-export const getDuplicates = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/records/duplicates`, {
-    method: 'GET',
-    ...API_CONFIG,
-  });
+// Get all duplicates
+export const getDuplicates = async (searchQuery = '', matchConfidence = 0.8) => {
+  try {
+    const queryParams = new URLSearchParams({
+      search: searchQuery,
+      matchConfidence: matchConfidence
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch duplicates');
+    const response = await fetch(
+      `${API_ENDPOINTS.DUPLICATES}?${queryParams}`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        ...API_CONFIG
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch duplicates');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching duplicates:', error);
+    throw error;
   }
+};
 
-  return await response.json();
+// Get duplicate detection rules
+export const getDuplicateRules = async () => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.RECORDS}/rules`,
+      {
+        method: 'GET',
+        headers: getAuthHeaders(),
+        ...API_CONFIG
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to fetch rules');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching rules:', error);
+    throw error;
+  }
+};
+
+// Update duplicate detection rules
+export const updateDuplicateRules = async (rules) => {
+  try {
+    const response = await fetch(
+      `${API_ENDPOINTS.RECORDS}/rules`,
+      {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        ...API_CONFIG,
+        body: JSON.stringify({ rules })
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to update rules');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error updating rules:', error);
+    throw error;
+  }
 };
 
 // Manage Data function

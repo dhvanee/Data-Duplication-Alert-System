@@ -19,19 +19,62 @@ const Profile = () => {
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      // Ensure dates are properly parsed
-      if (parsedUser.createdAt) {
-        parsedUser.createdAt = new Date(parsedUser.createdAt);
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const userData = await response.json();
+        // Parse dates
+        if (userData.createdAt) {
+          userData.createdAt = new Date(userData.createdAt);
+        }
+        if (userData.lastLogin) {
+          userData.lastLogin = new Date(userData.lastLogin);
+        }
+        
+        setUser(userData);
+        // Update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load profile data",
+          duration: 3000,
+        });
+        // Fallback to localStorage data
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          if (parsedUser.createdAt) {
+            parsedUser.createdAt = new Date(parsedUser.createdAt);
+          }
+          if (parsedUser.lastLogin) {
+            parsedUser.lastLogin = new Date(parsedUser.lastLogin);
+          }
+          setUser(parsedUser);
+        }
+      } finally {
+        setIsLoading(false);
       }
-      if (parsedUser.lastLogin) {
-        parsedUser.lastLogin = new Date(parsedUser.lastLogin);
-      }
-      setUser(parsedUser);
-    }
-    setIsLoading(false);
+    };
+
+    fetchUserData();
   }, []);
 
   const formatDate = (date) => {
