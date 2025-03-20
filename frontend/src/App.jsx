@@ -15,7 +15,12 @@ import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+<<<<<<< HEAD
 import Navigation from './components/Navigation';
+=======
+import Layout from './components/Layout';
+import PrivateRoute from './components/PrivateRoute';
+>>>>>>> 6c23f4688e0f6bfd5244de9ad3d627eaf174e91b
 
 const queryClient = new QueryClient();
 
@@ -23,6 +28,7 @@ const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
+<<<<<<< HEAD
         <div className="min-h-screen bg-gray-50">
           <Navigation />
           <Routes>
@@ -48,6 +54,36 @@ const App = () => {
       </BrowserRouter>
       <Toaster />
       <Sonner />
+=======
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Navigate to="/signin" />} />
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/signup" element={<SignUp />} />
+          
+          {/* Protected Routes */}
+          <Route
+            path="/app"
+            element={
+              <PrivateRoute>
+                <Layout />
+              </PrivateRoute>
+            }
+          >
+            <Route index element={<Navigate to="/app/dashboard" />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="data-management" element={<DataManagement />} />
+            <Route path="duplicates" element={<DataDuplication />} />
+            <Route path="settings" element={<Settings />} />
+            <Route path="profile" element={<Profile />} />
+          </Route>
+
+          {/* 404 Route */}
+          <Route path="*" element={<Navigate to="/app/dashboard" />} />
+        </Routes>
+        <Toaster />
+      </BrowserRouter>
+>>>>>>> 6c23f4688e0f6bfd5244de9ad3d627eaf174e91b
     </QueryClientProvider>
   );
 };

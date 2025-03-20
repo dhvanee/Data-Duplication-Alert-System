@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from '../components/ui/use-toast';
+import { login } from '../services/authService';
 
 const SignIn = () => {
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ const SignIn = () => {
     setIsLoading(true);
 
     try {
+<<<<<<< HEAD
       const response = await fetch('http://localhost:5000/api/auth/signin', {
         method: 'POST',
         headers: {
@@ -39,6 +41,10 @@ const SignIn = () => {
         localStorage.setItem('user', JSON.stringify(data.user));
       }
 
+=======
+      await login(formData.email, formData.password);
+      
+>>>>>>> 6c23f4688e0f6bfd5244de9ad3d627eaf174e91b
       toast({
         title: "Success!",
         description: "Signed in successfully",
