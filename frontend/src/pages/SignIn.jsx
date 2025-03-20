@@ -51,11 +51,9 @@ const SignIn = () => {
     try {
       console.log('Attempting login with:', { email: formData.email });
       
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch(API_ENDPOINTS.LOGIN, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        ...API_CONFIG,
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,

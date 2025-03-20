@@ -12,7 +12,7 @@ const app = express();
 
 // CORS Configuration
 const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', 'http://127.0.0.1:8081'],
+  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', 'http://127.0.0.1:8081', 'http://localhost:8084'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
@@ -25,7 +25,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check endpoint
-app.get(['/health', '/api/health'], (req, res) => {
+app.get('/api/health', (req, res) => {
   const dbState = mongoose.connection.readyState;
   const dbStatus = {
     0: 'disconnected',

@@ -2,7 +2,7 @@ const path = require('path');
 const fs = require('fs');
 const File = require('../models/File');
 const DownloadHistory = require('../models/DownloadHistory');
-const { generateFileHash, checkDuplicate, findSimilarFiles } = require('../utils/duplicateCheck');
+const { generateFileHash, checkDuplicate, findSimilarFiles } = require('../../utils/duplicateCheck');
 
 // Upload a new file
 exports.uploadFile = async (req, res) => {
