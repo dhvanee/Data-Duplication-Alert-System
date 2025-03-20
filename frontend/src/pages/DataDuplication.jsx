@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-<<<<<<< HEAD
 import {
   Search,
   Filter,
@@ -11,7 +10,12 @@ import {
   ChevronUp,
   MoreVertical,
   Settings2,
-  ArrowUpDown
+  ArrowUpDown,
+  Download,
+  Upload,
+  Trash2,
+  FileText,
+  PieChart
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,9 +33,24 @@ import {
 } from "../components/ui/select";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import Loading from "../components/ui/loading";
+import { toast } from "../components/ui/use-toast";
+import { Skeleton } from "../components/ui/skeleton";
 import { cn } from "../lib/utils";
-import { useToast } from "../hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "../components/ui/table";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 
 const DataDuplication = () => {
   const [duplicates, setDuplicates] = useState([
@@ -84,7 +103,24 @@ const DataDuplication = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
+
+  // New state for additional functionality
+  const [selectedDuplicates, setSelectedDuplicates] = useState(new Set());
+  const [filterCriteria, setFilterCriteria] = useState({
+    confidence: 'all', // all, high, medium, low
+    dateRange: 'all', // all, today, week, month
+    status: 'all', // all, pending, resolved, ignored
+  });
+  const [showStats, setShowStats] = useState(false);
+  const [view, setView] = useState('list'); // list, grid
+  
+  // Statistics calculation
+  const stats = {
+    total: duplicates.length,
+    highConfidence: duplicates.filter(d => d.matchPercentage >= 90).length,
+    mediumConfidence: duplicates.filter(d => d.matchPercentage >= 70 && d.matchPercentage < 90).length,
+    lowConfidence: duplicates.filter(d => d.matchPercentage < 70).length,
+  };
 
   useEffect(() => {
     // Simulate loading data
@@ -184,8 +220,169 @@ const DataDuplication = () => {
     )
   );
 
+  // Bulk actions
+  const handleBulkAction = (action) => {
+    setLoading(true);
+    const selectedIds = Array.from(selectedDuplicates);
+    
+    setTimeout(() => {
+      switch (action) {
+        case 'merge':
+          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
+          toast({
+            title: "Bulk Merge Complete",
+            description: `Successfully merged ${selectedIds.length} duplicate groups.`,
+          });
+          break;
+        case 'ignore':
+          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
+          toast({
+            title: "Bulk Ignore Complete",
+            description: `Ignored ${selectedIds.length} duplicate groups.`,
+          });
+          break;
+        case 'delete':
+          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
+          toast({
+            title: "Bulk Delete Complete",
+            description: `Deleted ${selectedIds.length} duplicate groups.`,
+            variant: "destructive",
+          });
+          break;
+      }
+      setSelectedDuplicates(new Set());
+      setLoading(false);
+    }, 1000);
+  };
+
+  // Export functionality
+  const handleExport = (format) => {
+    setLoading(true);
+    setTimeout(() => {
+      toast({
+        title: "Export Complete",
+        description: `Duplicates exported as ${format.toUpperCase()}.`,
+      });
+      setLoading(false);
+    }, 1000);
+  };
+
+  // Apply filters
+  const applyFilters = (duplicates) => {
+    let filtered = [...duplicates];
+    
+    // Confidence filter
+    if (filterCriteria.confidence !== 'all') {
+      filtered = filtered.filter(d => {
+        switch (filterCriteria.confidence) {
+          case 'high':
+            return d.matchPercentage >= 90;
+          case 'medium':
+            return d.matchPercentage >= 70 && d.matchPercentage < 90;
+          case 'low':
+            return d.matchPercentage < 70;
+          default:
+            return true;
+        }
+      });
+    }
+
+    // Date range filter
+    if (filterCriteria.dateRange !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(d => {
+        const date = new Date(d.timestamp);
+        switch (filterCriteria.dateRange) {
+          case 'today':
+            return date.toDateString() === now.toDateString();
+          case 'week':
+            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+          case 'month':
+            const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
+            return date >= monthAgo;
+          default:
+            return true;
+        }
+      });
+    }
+
+    return filtered;
+  };
+
+  // Render statistics
+  const renderStats = () => (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-500">Total Duplicates</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{stats.total}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-500">High Confidence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-red-600">{stats.highConfidence}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-500">Medium Confidence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-yellow-600">{stats.mediumConfidence}</div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-500">Low Confidence</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">{stats.lowConfidence}</div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
   if (loading) {
-    return <Loading />;
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-8">
+        <div className="flex justify-between items-center">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <Skeleton className="h-10 w-64" />
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-10 w-10" />
+            </div>
+            <div className="space-y-4">
+              {[1, 2].map((i) => (
+                <div key={i} className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="flex gap-2">
+                      <Skeleton className="h-9 w-24" />
+                      <Skeleton className="h-9 w-20" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-6">
+                    <Skeleton className="h-48" />
+                    <Skeleton className="h-48" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -197,19 +394,51 @@ const DataDuplication = () => {
             Manage and resolve duplicate records in your database
           </p>
         </div>
-        <Button
-          onClick={handleConfigureRules}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <Settings2 className="w-4 h-4" />
-          Configure Rules
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowStats(!showStats)}
+            className="flex items-center gap-2"
+          >
+            <PieChart className="w-4 h-4" />
+            {showStats ? 'Hide Stats' : 'Show Stats'}
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Download className="w-4 h-4" />
+                Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleExport('csv')}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export as CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleExport('json')}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export as JSON
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            onClick={handleConfigureRules}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2"
+          >
+            <Settings2 className="w-4 h-4" />
+            Configure Rules
+          </Button>
+        </div>
       </div>
+
+      {showStats && renderStats()}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200">
-          <div className="flex gap-4 items-center">
+          <div className="flex flex-wrap gap-4 items-center">
             <div className="flex-1 max-w-sm">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -222,16 +451,37 @@ const DataDuplication = () => {
                 />
               </div>
             </div>
-            <Select value={sortBy} onValueChange={handleSort}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Sort by" />
+            
+            <Select 
+              value={filterCriteria.confidence}
+              onValueChange={(value) => setFilterCriteria(prev => ({ ...prev, confidence: value }))}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Confidence" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="matchConfidence">Match Confidence</SelectItem>
-                <SelectItem value="timestamp">Date Detected</SelectItem>
-                <SelectItem value="name">Name</SelectItem>
+                <SelectItem value="all">All Confidence</SelectItem>
+                <SelectItem value="high">High (≥90%)</SelectItem>
+                <SelectItem value="medium">Medium (70-89%)</SelectItem>
+                <SelectItem value="low">Low (&lt;70%)</SelectItem>
               </SelectContent>
             </Select>
+
+            <Select 
+              value={filterCriteria.dateRange}
+              onValueChange={(value) => setFilterCriteria(prev => ({ ...prev, dateRange: value }))}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">Past Week</SelectItem>
+                <SelectItem value="month">Past Month</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Button
               variant="outline"
               size="icon"
@@ -244,6 +494,39 @@ const DataDuplication = () => {
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
+
+          {selectedDuplicates.size > 0 && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">
+                  {selectedDuplicates.size} items selected
+                </span>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => handleBulkAction('merge')}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  Merge Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkAction('ignore')}
+                >
+                  Ignore Selected
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleBulkAction('delete')}
+                  className="text-red-600 hover:text-red-700"
+                >
+                  Delete Selected
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="divide-y divide-gray-200">
@@ -258,15 +541,29 @@ const DataDuplication = () => {
               </p>
             </div>
           ) : (
-            filteredDuplicates.map((duplicate) => (
+            applyFilters(filteredDuplicates).map((duplicate) => (
               <div key={duplicate.id} className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedDuplicates.has(duplicate.id)}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedDuplicates);
+                        if (e.target.checked) {
+                          newSelected.add(duplicate.id);
+                        } else {
+                          newSelected.delete(duplicate.id);
+                        }
+                        setSelectedDuplicates(newSelected);
+                      }}
+                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
+                    />
                     <span className={cn(
                       'px-3 py-1 rounded-full text-sm font-medium',
                       duplicate.matchPercentage >= 90 
                         ? 'bg-red-100 text-red-800'
-                        : duplicate.matchPercentage >= 80
+                        : duplicate.matchPercentage >= 70
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
                     )}>
@@ -299,6 +596,10 @@ const DataDuplication = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => handleExport('csv')}>
+                          Export Group
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600"
                           onClick={() => handleDelete(duplicate.id)}
@@ -351,92 +652,6 @@ const DataDuplication = () => {
           )}
         </div>
       </div>
-=======
-import { useLocation } from 'react-router-dom';
-import { getDuplicates } from '../services/dataService';
-import { toast } from '../components/ui/use-toast';
-
-const DataDuplication = () => {
-  const [duplicates, setDuplicates] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const location = useLocation();
-
-  useEffect(() => {
-    const fetchDuplicates = async () => {
-      try {
-        const data = location.state?.duplicates || await getDuplicates();
-        setDuplicates(data);
-      } catch (error) {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: error.message || "Failed to fetch duplicates",
-          duration: 3000,
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchDuplicates();
-  }, [location.state]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Review Duplicates</h1>
-      
-      {duplicates.length === 0 ? (
-        <div className="text-center py-12">
-          <h3 className="text-lg font-medium text-gray-900">No duplicates found</h3>
-          <p className="text-gray-500">Your data is clean and free of duplicates.</p>
-        </div>
-      ) : (
-        <div className="grid gap-6">
-          {duplicates.map((item, index) => (
-            <div key={index} className="bg-white p-6 rounded-lg shadow">
-              <div className="grid md:grid-cols-2 gap-6">
-                <div className="border-r pr-6">
-                  <h3 className="font-semibold text-lg mb-4">Original Record</h3>
-                  <RecordDetails record={item.original} />
-                </div>
-                <div className="pl-6">
-                  <h3 className="font-semibold text-lg mb-4">Duplicate Record</h3>
-                  <RecordDetails record={item.duplicate} />
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end space-x-4">
-                <button
-                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-                  onClick={() => handleDeleteDuplicate(item.duplicate._id)}
-                >
-                  Delete Duplicate
-                </button>
-                <button
-                  className="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700"
-                  onClick={() => handleMergeDuplicates(item)}
-                >
-                  Merge Records
-                </button>
-                <button
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-                  onClick={() => handleKeepBoth(item)}
-                >
-                  Keep Both
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
->>>>>>> 6c23f4688e0f6bfd5244de9ad3d627eaf174e91b
     </div>
   );
 };

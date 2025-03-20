@@ -8,7 +8,10 @@ const SignUp = () => {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    role: 'user',
+    createdAt: new Date().toISOString(),
+    lastLogin: new Date().toISOString()
   });
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,13 +51,22 @@ const SignUp = () => {
 
       toast({
         title: "Success",
-        description: "Account created successfully! Please sign in.",
+        description: "Account created successfully!",
         duration: 3000,
       });
 
-      // Redirect to signin page after successful registration
+      // Store user data and token
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user', JSON.stringify({
+        ...data.user,
+        createdAt: formData.createdAt,
+        lastLogin: formData.lastLogin,
+        role: formData.role
+      }));
+
+      // Redirect to dashboard after successful registration
       setTimeout(() => {
-        navigate('/signin');
+        navigate('/dashboard');
       }, 1000);
 
     } catch (error) {

@@ -51,6 +51,64 @@ const Navigation = () => {
 
   const unreadCount = notifications.filter(n => n.status === 'unread').length;
 
+  const navItems = [
+    {
+      label: 'Dashboard',
+      path: '/dashboard',
+      icon: 'LayoutDashboard'
+    },
+    {
+      label: 'Data Management',
+      path: '/data',
+      icon: 'Database'
+    },
+    {
+      label: 'Duplicate Detection',
+      path: '/duplicates',
+      icon: 'Copy'
+    },
+    {
+      label: 'Settings',
+      path: '/settings',
+      icon: 'Settings'
+    },
+    {
+      label: 'Help',
+      path: '/help',
+      icon: 'HelpCircle'
+    }
+  ];
+
+  const isLandingPage = location.pathname === '/';
+
+  if (isLandingPage) {
+    return (
+      <header className="fixed top-0 left-0 right-0 bg-white shadow-sm z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Link to="/" className="text-2xl font-bold text-blue-600">DDAS</Link>
+            </div>
+            <div className="flex items-center space-x-4">
+              <Link
+                to="/sign-in"
+                className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                to="/sign-up"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create Account
+              </Link>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -60,81 +118,20 @@ const Navigation = () => {
           </Link>
           
           <nav className="flex items-center gap-6">
-            <Link
-              to="/dashboard"
-              className={cn(
-                'flex items-center gap-2 text-sm font-medium transition-colors',
-                isActive('/dashboard') 
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Dashboard
-            </Link>
-            
-            <Link
-              to="/data"
-              className={cn(
-                'flex items-center gap-2 text-sm font-medium transition-colors',
-                isActive('/data')
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-              </svg>
-              Data Management
-            </Link>
-            
-            <Link
-              to="/duplicates"
-              className={cn(
-                'flex items-center gap-2 text-sm font-medium transition-colors',
-                isActive('/duplicates')
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-              </svg>
-              Duplicates
-            </Link>
-            
-            <Link
-              to="/settings"
-              className={cn(
-                'flex items-center gap-2 text-sm font-medium transition-colors',
-                isActive('/settings')
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-              Settings
-            </Link>
-            
-            <Link
-              to="/help"
-              className={cn(
-                'flex items-center gap-2 text-sm font-medium transition-colors',
-                isActive('/help')
-                  ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-blue-600'
-              )}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              Help
-            </Link>
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={cn(
+                  'flex items-center gap-2 text-sm font-medium transition-colors',
+                  isActive(item.path)
+                    ? 'text-blue-600'
+                    : 'text-gray-600 hover:text-blue-600'
+                )}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </div>
 

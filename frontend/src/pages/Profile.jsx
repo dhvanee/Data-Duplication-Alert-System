@@ -17,6 +17,12 @@ const Profile = () => {
     systemUpdates: true,
     activitySummary: false
   });
+  const [activities, setActivities] = useState([]);
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    duplicatesFound: 0,
+    lastActivity: null
+  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -30,9 +36,46 @@ const Profile = () => {
         parsedUser.lastLogin = new Date(parsedUser.lastLogin);
       }
       setUser(parsedUser);
+
+      // Fetch user activities
+      fetchUserActivities(parsedUser.id);
+      // Fetch user stats
+      fetchUserStats(parsedUser.id);
     }
     setIsLoading(false);
   }, []);
+
+  const fetchUserActivities = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/${userId}/activities`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setActivities(data.activities || []);
+      }
+    } catch (error) {
+      console.error('Failed to fetch activities:', error);
+    }
+  };
+
+  const fetchUserStats = async (userId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/user/${userId}/stats`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setStats(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
+  };
 
   const formatDate = (date) => {
     if (!date) return 'Not available';
@@ -202,19 +245,42 @@ const Profile = () => {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
                   <div className="bg-gray-50 rounded-lg p-6">
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                          <span className="text-gray-900">Logged in successfully</span>
+                      {activities.length > 0 ? (
+                        activities.map((activity, index) => (
+                          <div key={index} className="flex items-center justify-between py-3 border-b border-gray-200">
+                            <div className="flex items-center space-x-3">
+                              <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                              <span className="text-gray-900">{activity.description}</span>
+                            </div>
+                            <span className="text-sm text-gray-500">{formatDate(activity.timestamp)}</span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500">
+                          No recent activity
                         </div>
-                        <span className="text-sm text-gray-500">Just now</span>
+                      )}
+                    </div>
+                  </div>
+                </section>
+
+                <section className="mt-8">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h2>
+                  <div className="bg-gray-50 rounded-lg p-6">
+                    <div className="grid grid-cols-3 gap-6">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{stats.totalRecords}</div>
+                        <div className="text-sm text-gray-500">Total Records</div>
                       </div>
-                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                          <span className="text-gray-900">Profile updated</span>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">{stats.duplicatesFound}</div>
+                        <div className="text-sm text-gray-500">Duplicates Found</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {stats.lastActivity ? formatDate(stats.lastActivity) : 'N/A'}
                         </div>
-                        <span className="text-sm text-gray-500">2 hours ago</span>
+                        <div className="text-sm text-gray-500">Last Activity</div>
                       </div>
                     </div>
                   </div>
