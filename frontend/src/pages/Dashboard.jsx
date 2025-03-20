@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,52 +29,96 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const duplicateTrendsData = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-    datasets: [
-      {
-        label: 'Duplicates',
-        data: [65, 55, 80, 81, 56, 55, 40],
-        backgroundColor: 'rgb(59, 130, 246)',
-        borderColor: 'rgb(59, 130, 246)',
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-    ],
+  const [selectedRange, setSelectedRange] = useState('7days');
+  const [chartData, setChartData] = useState(null);
+  const [stats, setStats] = useState({
+    totalDuplicates: 0,
+    resolved: 0,
+    pending: 0
+  });
+
+  // Mock data for different time ranges
+  const mockData = {
+    '7days': {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      values: [65, 55, 80, 81, 56, 55, 40],
+      stats: {
+        totalDuplicates: 2847,
+        resolved: 1923,
+        pending: 924,
+        totalChange: '+12.5%',
+        resolvedChange: '+8.2%',
+        pendingChange: '-2.4%'
+      }
+    },
+    'month': {
+      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+      values: [75, 65, 85, 70],
+      stats: {
+        totalDuplicates: 3256,
+        resolved: 2150,
+        pending: 1106,
+        totalChange: '+15.2%',
+        resolvedChange: '+10.5%',
+        pendingChange: '-5.8%'
+      }
+    },
+    'custom': {
+      labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+      values: [45, 60, 75, 70, 85, 80],
+      stats: {
+        totalDuplicates: 4521,
+        resolved: 3250,
+        pending: 1271,
+        totalChange: '+18.7%',
+        resolvedChange: '+12.3%',
+        pendingChange: '-8.2%'
+      }
+    }
   };
 
-  const dataDistributionData = {
-    labels: ['Unique Records', 'Potential Duplicates', 'Confirmed Duplicates'],
-    datasets: [
-      {
-        data: [84, 11, 5],
-        backgroundColor: [
-          'rgb(59, 130, 246)',
-          'rgb(245, 158, 11)',
-          'rgb(239, 68, 68)',
+  useEffect(() => {
+    // Update chart data when range changes
+    const data = mockData[selectedRange];
+    if (data) {
+      setChartData({
+        labels: data.labels,
+        datasets: [
+          {
+            label: 'Duplicates',
+            data: data.values,
+            backgroundColor: 'rgb(59, 130, 246)',
+            borderColor: 'rgb(59, 130, 246)',
+            borderWidth: 1,
+            borderRadius: 4,
+          },
         ],
-        borderWidth: 0,
-      },
-    ],
-  };
+      });
+      setStats(data.stats);
+    }
+  }, [selectedRange]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          color: '#111827',
-          font: {
-            family: "'Inter', sans-serif",
-            size: 12,
-          },
-          padding: 20,
-          usePointStyle: true,
-        },
+        display: false
       },
+      tooltip: {
+        backgroundColor: 'rgb(255, 255, 255)',
+        titleColor: 'rgb(17, 24, 39)',
+        bodyColor: 'rgb(17, 24, 39)',
+        borderColor: 'rgb(229, 231, 235)',
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 6,
+        usePointStyle: true,
+        callbacks: {
+          title: (context) => context[0].label,
+          label: (context) => `Duplicates: ${context.raw}`
+        }
+      }
     },
     scales: {
       x: {
@@ -99,30 +143,8 @@ const Dashboard = () => {
           },
         },
         beginAtZero: true,
-        max: 100,
       },
     },
-  };
-
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        display: true,
-        position: 'bottom',
-        labels: {
-          color: '#111827',
-          font: {
-            family: "'Inter', sans-serif",
-            size: 12,
-          },
-          padding: 20,
-          usePointStyle: true,
-        },
-      },
-    },
-    cutout: '75%',
   };
 
   return (
@@ -130,133 +152,134 @@ const Dashboard = () => {
       <div className="max-w-[1400px] mx-auto p-6">
         <div className="mb-8">
           <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600">Welcome back, Demo User. Here's an overview of your data.</p>
+          <p className="text-gray-600">Welcome back. Here's an overview of your data.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Total Records</div>
-                <div className="text-2xl font-semibold text-gray-900">475</div>
-              </div>
-            </div>
+        {/* Date Range Selector */}
+        <div className="mb-8 flex justify-between items-center">
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setSelectedRange('7days')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedRange === '7days'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last 7 Days
+            </button>
+            <button
+              onClick={() => setSelectedRange('month')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedRange === 'month'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Last Month
+            </button>
+            <button
+              onClick={() => setSelectedRange('custom')}
+              className={`px-4 py-2 rounded-lg transition-colors ${
+                selectedRange === 'custom'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Custom Range
+            </button>
           </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-yellow-50 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Duplicate Records</div>
-                <div className="text-2xl font-semibold text-gray-900">75</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-green-50 rounded-lg">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Resolved Duplicates</div>
-                <div className="text-2xl font-semibold text-gray-900">30</div>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-purple-50 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">Last Updated</div>
-                <div className="text-2xl font-semibold text-gray-900">2h ago</div>
-              </div>
-            </div>
+          
+          <div className="flex space-x-2">
+            <button className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+              </svg>
+            </button>
+            <button className="p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </button>
           </div>
         </div>
 
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 text-sm">Total Duplicates</h3>
+              <span className="text-green-500 text-sm">{mockData[selectedRange].stats.totalChange}</span>
+            </div>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">{stats.totalDuplicates.toLocaleString()}</p>
+            <div className="mt-4 h-2 bg-gray-200 rounded">
+              <div className="h-2 bg-blue-600 rounded" style={{ width: '75%' }}></div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 text-sm">Resolved</h3>
+              <span className="text-green-500 text-sm">{mockData[selectedRange].stats.resolvedChange}</span>
+            </div>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">{stats.resolved.toLocaleString()}</p>
+            <div className="mt-4 h-2 bg-gray-200 rounded">
+              <div className="h-2 bg-green-500 rounded" style={{ width: '65%' }}></div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div className="flex items-center justify-between">
+              <h3 className="text-gray-500 text-sm">Pending</h3>
+              <span className="text-red-500 text-sm">{mockData[selectedRange].stats.pendingChange}</span>
+            </div>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">{stats.pending.toLocaleString()}</p>
+            <div className="mt-4 h-2 bg-gray-200 rounded">
+              <div className="h-2 bg-yellow-500 rounded" style={{ width: '35%' }}></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Duplicate Trends</h2>
             <div className="h-[300px]">
-              <Bar data={duplicateTrendsData} options={chartOptions} />
+              {chartData && <Bar data={chartData} options={chartOptions} />}
             </div>
           </div>
+          
           <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Data Distribution</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Distribution</h2>
             <div className="h-[300px]">
-              <Doughnut data={dataDistributionData} options={doughnutOptions} />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-blue-50 rounded-lg">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-gray-900 font-medium">Upload Data</h3>
-                  <p className="text-gray-600 text-sm">Import CSV or Excel</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-green-50 rounded-lg">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-gray-900 font-medium">Export Report</h3>
-                  <p className="text-gray-600 text-sm">Download as Excel</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-yellow-50 rounded-lg">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-gray-900 font-medium">Review Duplicates</h3>
-                  <p className="text-gray-600 text-sm">45 duplicates found</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer">
-              <div className="flex items-center gap-4">
-                <div className="p-2 bg-purple-50 rounded-lg">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 className="text-gray-900 font-medium">Manage Data</h3>
-                  <p className="text-gray-600 text-sm">View and edit records</p>
-                </div>
-              </div>
+              <Doughnut
+                data={{
+                  labels: ['Unique Records', 'Potential Duplicates', 'Confirmed Duplicates'],
+                  datasets: [{
+                    data: [84, 11, 5],
+                    backgroundColor: [
+                      'rgb(59, 130, 246)',
+                      'rgb(245, 158, 11)',
+                      'rgb(239, 68, 68)',
+                    ],
+                    borderWidth: 0,
+                  }],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'bottom',
+                      labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                      },
+                    },
+                  },
+                  cutout: '70%',
+                }}
+              />
             </div>
           </div>
         </div>

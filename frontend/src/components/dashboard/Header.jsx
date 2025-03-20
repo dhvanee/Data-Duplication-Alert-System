@@ -1,31 +1,105 @@
-import React from 'react';
-import { cn } from './lib/utils'; // Corrected import path
-import { Search, Bell, ChevronDown } from "lucide-react";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Bell, User, ChevronDown, LogOut, Settings, HelpCircle } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-const Header = ({ className }) => {
+const Header = () => {
+  const navigate = useNavigate();
+  const [notifications] = useState([
+    {
+      id: 1,
+      title: 'New duplicate found',
+      message: 'A new duplicate record has been detected.',
+      time: '5m ago'
+    },
+    {
+      id: 2,
+      title: 'System update',
+      message: 'System maintenance scheduled for tonight.',
+      time: '1h ago'
+    },
+    {
+      id: 3,
+      title: 'Backup completed',
+      message: 'Daily backup has been completed successfully.',
+      time: '2h ago'
+    }
+  ]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/sign-in');
+  };
+
   return (
-    <header className={cn("glass-card border-b border-border h-16 flex items-center justify-between px-6", className)}>
-      <div className="font-medium text-lg">Welcome back, Alex</div>
-      
-      <div className="flex items-center space-x-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <input 
-            className="bg-background/60 border border-border rounded-full pl-10 pr-4 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/10 w-56"
-            placeholder="Search..." 
-          />
-        </div>
+    <header className="border-b p-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <h1 className="text-xl font-semibold">Dashboard</h1>
         
-        <button className="relative bg-background/60 hover:bg-background/80 p-2 rounded-full flex items-center justify-center">
-          <Bell className="w-5 h-5" />
-          <span className="absolute -top-0.5 -right-0.5 bg-destructive text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">3</span>
-        </button>
-        
-        <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80">
-          <div className="w-8 h-8 rounded-full bg-sidebar-primary flex items-center justify-center">
-            <span className="text-white font-medium text-sm">A</span>
-          </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground" />
+        <div className="flex items-center space-x-4">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="relative p-2 hover:bg-accent rounded-full transition-colors">
+                <Bell className="h-5 w-5" />
+                {notifications.length > 0 && (
+                  <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {notifications.map((notification) => (
+                <DropdownMenuItem key={notification.id} className="flex flex-col items-start py-2">
+                  <div className="font-medium">{notification.title}</div>
+                  <div className="text-sm text-muted-foreground">{notification.message}</div>
+                  <div className="text-xs text-muted-foreground mt-1">{notification.time}</div>
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center space-x-2 hover:bg-accent rounded-lg px-2 py-1 transition-colors">
+                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                  <User className="h-5 w-5" />
+                </div>
+                <span className="font-medium">John Doe</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate('/profile')} className="cursor-pointer">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')} className="cursor-pointer">
+                <Settings className="mr-2 h-4 w-4" />
+                <span>Settings</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/help')} className="cursor-pointer">
+                <HelpCircle className="mr-2 h-4 w-4" />
+                <span>Help</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
