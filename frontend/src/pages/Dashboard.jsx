@@ -29,6 +29,7 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
+<<<<<<< HEAD
   const [selectedRange, setSelectedRange] = useState('7days');
   const [chartData, setChartData] = useState(null);
   const [stats, setStats] = useState({
@@ -75,6 +76,49 @@ const Dashboard = () => {
         pendingChange: '-8.2%'
       }
     }
+=======
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    duplicateRecords: 0,
+    resolvedDuplicates: 0,
+    lastUpdated: null
+  });
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('http://localhost:5000/api/records/stats', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
+
+  const duplicateTrendsData = {
+    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+    datasets: [
+      {
+        label: 'Duplicates',
+        data: [65, 55, 80, 81, 56, 55, 40],
+        backgroundColor: 'rgb(59, 130, 246)',
+        borderColor: 'rgb(59, 130, 246)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+    ],
+>>>>>>> 613ad7caadd552286172dfa29eed2c60d555e84f
   };
 
   useEffect(() => {
@@ -155,6 +199,7 @@ const Dashboard = () => {
           <p className="text-gray-600">Welcome back. Here's an overview of your data.</p>
         </div>
 
+<<<<<<< HEAD
         {/* Date Range Selector */}
         <div className="mb-8 flex justify-between items-center">
           <div className="flex space-x-4">
@@ -236,6 +281,61 @@ const Dashboard = () => {
             <p className="text-2xl font-semibold text-gray-900 mt-2">{stats.pending.toLocaleString()}</p>
             <div className="mt-4 h-2 bg-gray-200 rounded">
               <div className="h-2 bg-yellow-500 rounded" style={{ width: '35%' }}></div>
+=======
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Total Records</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.totalRecords}</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-yellow-50 rounded-lg">
+                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Duplicate Records</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.duplicateRecords}</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-green-50 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Resolved Duplicates</div>
+                <div className="text-2xl font-semibold text-gray-900">{stats.resolvedDuplicates}</div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-purple-50 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Last Updated</div>
+                <div className="text-2xl font-semibold text-gray-900">
+                  {stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Never'}
+                </div>
+              </div>
+>>>>>>> 613ad7caadd552286172dfa29eed2c60d555e84f
             </div>
           </div>
         </div>
