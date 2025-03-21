@@ -65,7 +65,8 @@ const SignIn = () => {
         description: "Signed in successfully",
       });
 
-      navigate('/app/dashboard');
+      // After successful login, redirect to dashboard
+      navigate('/dashboard');
     } catch (error) {
       console.error('Login error:', error);
       toast({

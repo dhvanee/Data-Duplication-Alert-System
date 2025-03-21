@@ -14,29 +14,42 @@ const DataRepository = () => {
 
   // Fetch datasets from backend
   useEffect(() => {
-    fetchDatasets();
+    // Mock data for immediate testing
+    const mockData = [
+      {
+        id: 1,
+        name: 'Employee Records 2024',
+        description: 'Annual employee data compilation',
+        department: 'research',
+        fileType: 'xlsx',
+        size: 1024 * 1024 * 2.5, // 2.5MB
+        uploadedAt: '2024-03-01',
+        previewUrl: '#'
+      },
+      {
+        id: 2,
+        name: 'Customer Database',
+        description: 'Complete customer information',
+        department: 'administrative',
+        fileType: 'csv',
+        size: 1024 * 1024 * 1.8, // 1.8MB
+        uploadedAt: '2024-03-10',
+        previewUrl: '#'
+      },
+      {
+        id: 3,
+        name: 'Research Findings Q1',
+        description: 'Quarterly research results',
+        department: 'research',
+        fileType: 'pdf',
+        size: 1024 * 1024 * 3.2, // 3.2MB
+        uploadedAt: '2024-03-15',
+        previewUrl: '#'
+      }
+    ];
+    setDatasets(mockData);
+    setIsLoading(false);
   }, []);
-
-  const fetchDatasets = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/datasets', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setDatasets(data);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch datasets",
-        duration: 3000,
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
