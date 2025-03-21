@@ -40,48 +40,43 @@ const Landing = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+    <div className="min-h-screen bg-gradient-to-[130deg] from-blue-900 via-blue-700 to-blue-600">
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-white py-20">
+      <div className="relative overflow-hidden bg-transparent py-20">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0066ff0a_1px,transparent_1px),linear-gradient(to_bottom,#0066ff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
         </div>
         <div className="relative">
           <div className="max-w-[85rem] mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="max-w-3xl text-center mx-auto">
+            <div className="text-center">
               <motion.div
-                initial={{ x: -100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="mb-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
               >
-                <h1 className="font-bold text-gray-800 text-4xl md:text-5xl lg:text-6xl mb-6">
-                  Data Duplication
-                  <span className="block mt-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400">Alert System</span>
+                <h1 className="font-bold text-4xl md:text-5xl lg:text-6xl mb-6">
+                  <span className="text-blue-600">Data Duplication</span>
+                  <span className="block mt-2 text-blue-400">Alert System</span>
                 </h1>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                  Transform your data management with AI-powered duplicate detection.
-                  Clean, accurate, and efficient data processing for modern enterprises.
-                </p>
               </motion.div>
 
               <motion.div
-                initial={{ x: 100, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
-                className="flex gap-4 justify-center"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="flex justify-center gap-4 mt-8"
               >
-                <Link to="/sign-up">
-                  <Button size="lg" className="inline-flex items-center gap-x-2 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 shadow-lg hover:shadow-xl transition-all duration-200 text-lg px-8 py-6">
-                    Get Started
-                    <ArrowRight className="w-5 h-5" />
-                  </Button>
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Get Started <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/sign-in">
-                  <Button variant="outline" size="lg" className="inline-flex items-center gap-x-2 text-lg px-8 py-6 hover:bg-blue-50 border-2 border-blue-200">
-                    Live Demo
-                    <Play className="w-5 h-5" />
-                  </Button>
+                <Link
+                  to="/demo"
+                  className="inline-flex items-center px-6 py-3 text-base font-medium border border-transparent rounded-md shadow-sm text-blue-600 bg-white hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Live Demo <Play className="ml-2 h-5 w-5" />
                 </Link>
               </motion.div>
             </div>
@@ -169,11 +164,11 @@ const Landing = () => {
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Join leading companies using our intelligent duplicate detection system
           </p>
-          <Link to="/sign-up">
-            <Button size="lg" className="inline-flex items-center gap-x-2 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 shadow-lg hover:shadow-xl transition-all duration-200 text-lg px-8 py-6">
-              Get Started
-              <ArrowRight className="w-5 h-5" />
-            </Button>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center px-6 py-3 text-base font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Get Started <ArrowRight className="ml-2 h-5 w-5" />
           </Link>
         </motion.div>
       </div>
