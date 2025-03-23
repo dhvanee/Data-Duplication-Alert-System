@@ -1,61 +1,54 @@
-import express from 'express';
-import mongoose from 'mongoose';
-import cors from 'cors';
-import 'dotenv/config';
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const morgan = require('morgan');
+const path = require('path');
+const fs = require('fs');
 
 // Import routes
-import authRoutes from './src/routes/auth.js';
-import recordRoutes from './src/routes/records.js';
-import userRoutes from './src/routes/user.js';
+const authRoutes = require('./src/routes/auth');
+const recordRoutes = require('./src/routes/records');
+const userRoutes = require('./src/routes/user');
 
 const app = express();
-
-// CORS Configuration
-const corsOptions = {
-  origin: ['http://localhost:3000', 'http://localhost:5173', 'http://localhost:8081', 'http://127.0.0.1:8081', 'http://localhost:8084'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept'],
-  exposedHeaders: ['Content-Length', 'X-Requested-With'],
-  optionsSuccessStatus: 200
-};
+const port = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors(corsOptions));
+app.use(cors({
+  origin: ['http://localhost:8081', 'http://127.0.0.1:8081'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbStatus = {
-    0: 'disconnected',
-    1: 'connected',
-    2: 'connecting',
-    3: 'disconnecting',
-  };
-
-  res.json({
-    status: 'ok',
-    timestamp: new Date(),
-    database: dbStatus[dbState],
-    uptime: process.uptime()
-  });
-});
-
-// Pre-flight requests
-app.options('*', cors(corsOptions));
+app.use(morgan('dev'));
 
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/user', userRoutes);
 
+// Serve static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Health check route
+app.get('/api/health', (req, res) => {
+  const isDbConnected = mongoose.connection.readyState === 1;
+  res.json({ 
+    status: isDbConnected ? 'ok' : 'error',
+    message: isDbConnected ? 'Server is running' : 'Database connection error',
+    dbStatus: isDbConnected ? 'connected' : 'disconnected',
+    dbName: mongoose.connection.db?.databaseName || 'not connected'
+  });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
-  res.status(err.status || 500).json({
-    message: err.message || 'Internal server error',
-    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!'
   });
 });
 
@@ -64,40 +57,39 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-// MongoDB connection with retry logic
-const connectWithRetry = async () => {
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Connect to MongoDB
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Start server
+const startServer = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB successfully');
-    
-    // Only start the server after successful database connection
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log('CORS enabled for origins:', corsOptions.origin);
+    const server = app.listen(port, () => {
+      console.log(`Server is running on port ${port}`);
+    });
+
+    // Graceful shutdown
+    process.on('SIGTERM', () => {
+      console.log('SIGTERM signal received');
+      server.close(() => {
+        console.log('Server closed');
+        mongoose.connection.close(false, () => {
+          console.log('MongoDB connection closed');
+          process.exit(0);
+        });
+      });
     });
   } catch (error) {
-    console.error('MongoDB connection error:', error);
-    console.log('Retrying connection in 5 seconds...');
-    setTimeout(connectWithRetry, 5000);
+    console.error('Server startup error:', error);
+    process.exit(1);
   }
 };
 
-// Initial connection attempt
-connectWithRetry();
-
-// Handle unhandled promise rejections
-process.on('unhandledRejection', (error) => {
-  console.error('Unhandled Promise Rejection:', error);
-  if (process.env.NODE_ENV === 'development') {
-    console.error(error);
-  }
-});
-
-// Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  if (process.env.NODE_ENV === 'development') {
-    console.error(error);
-  }
-});
+startServer();

@@ -5,16 +5,17 @@ import path from "path";
 // https://vitejs.dev/config/
 export default defineConfig({
   server: {
-    port: 8082,
-    strictPort: false,
-    host: true,
-    fs: {
-      strict: false,
-      allow: ['..']
+    port: 8081,
+    strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+        secure: false,
+        ws: true
+      }
     },
-    watch: {
-      usePolling: true
-    }
+    cors: true
   },
   plugins: [react()],
   resolve: {
@@ -22,4 +23,8 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  base: "/",
+  preview: {
+    port: 8081
+  }
 });

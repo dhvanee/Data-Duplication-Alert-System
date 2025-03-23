@@ -1,171 +1,186 @@
-import express from 'express';
-import multer from 'multer';
-import { auth } from '../middleware/auth.js';
-import * as XLSX from 'xlsx';
-import { Record } from '../models/Record.js';
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const XLSX = require('xlsx');
+const { auth } = require('../middleware/auth');
+const { Record } = require('../models/Record');
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
 
-// Upload data
-router.post('/upload', auth, upload.single('file'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'No file uploaded' });
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadDir = 'uploads';
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
     }
-
-    const workbook = XLSX.readFile(req.file.path);
-    const sheetName = workbook.SheetNames[0];
-    const records = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
-
-    await Record.insertMany(records);
-
-    res.json({ message: 'File uploaded successfully', count: records.length });
-  } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ message: 'Error uploading file', error: error.message });
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + '-' + file.originalname);
   }
 });
 
-// Export data
-router.get('/export', auth, async (req, res) => {
-  try {
-    const records = await Record.find({});
-    const worksheet = XLSX.utils.json_to_sheet(records);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
-
-    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename=ddas-export-${Date.now()}.xlsx`);
-    res.send(buffer);
-  } catch (error) {
-    console.error('Export error:', error);
-    res.status(500).json({ message: 'Error exporting data', error: error.message });
-  }
-});
-
-// Get duplicates
-router.get('/duplicates', auth, async (req, res) => {
-  try {
-    const records = await Record.find({});
-    const duplicates = findDuplicates(records);
-    res.json(duplicates);
-  } catch (error) {
-    console.error('Duplicates error:', error);
-    res.status(500).json({ message: 'Error fetching duplicates', error: error.message });
+const upload = multer({
+  storage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['.xlsx', '.xls', '.csv'];
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (allowedTypes.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only XLSX, XLS, and CSV files are allowed.'));
+    }
   }
 });
 
 // Get all records
 router.get('/', auth, async (req, res) => {
   try {
-    const records = await Record.find({});
-    res.json(records);
+    const records = await Record.find({ createdBy: req.user._id })
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      records: records.map(record => ({
+        _id: record._id,
+        name: record.name,
+        fileType: record.fileType,
+        size: record.size,
+        status: record.status,
+        createdAt: record.createdAt,
+        description: record.description
+      }))
+    });
   } catch (error) {
-    console.error('Records error:', error);
-    res.status(500).json({ message: 'Error fetching records', error: error.message });
+    console.error('Error fetching records:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching records'
+    });
   }
 });
 
-// Helper function to find duplicates
-function findDuplicates(records) {
-  const duplicates = [];
-  const seen = new Map();
-
-  records.forEach(record => {
-    const key = generateDuplicateKey(record);
-    if (seen.has(key)) {
-      duplicates.push({
-        original: seen.get(key),
-        duplicate: record
+// Upload new record
+router.post('/upload', auth, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
       });
-    } else {
-      seen.set(key, record);
     }
-  });
 
-  return duplicates;
-}
+    const metadata = JSON.parse(req.body.metadata || '{}');
+    const fileStats = fs.statSync(req.file.path);
+    const sizeInMB = (fileStats.size / (1024 * 1024)).toFixed(2);
 
-// Helper function to generate duplicate key
-function generateDuplicateKey(record) {
-  // Customize this based on your duplicate detection criteria
-  return `${record.name?.toLowerCase()}-${record.email?.toLowerCase()}`;
-}
-
-// Add new record
-router.post('/', auth, async (req, res) => {
-  try {
     const record = new Record({
-      ...req.body,
-      createdBy: req.user._id
-    });
-    await record.save();
-    res.status(201).json(record);
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating record', error: error.message });
-  }
-});
-
-// Check for duplicates
-router.post('/check-duplicates', auth, async (req, res) => {
-  try {
-    const { name, email, phone } = req.body;
-    
-    // Find potential duplicates based on email or phone
-    const potentialDuplicates = await Record.find({
+      name: metadata.name || req.file.originalname,
+      originalName: req.file.originalname,
+      fileType: path.extname(req.file.originalname).toUpperCase().slice(1),
+      filePath: req.file.path,
+      size: `${sizeInMB} MB`,
+      description: metadata.description,
+      tags: metadata.tags,
+      accessLevel: metadata.accessLevel,
       createdBy: req.user._id,
-      $or: [
-        { email },
-        { phone },
-        { name: { $regex: new RegExp(name, 'i') } }
-      ]
+      status: 'pending'
     });
 
-    res.json(potentialDuplicates);
+    await record.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'File uploaded successfully',
+      record: {
+        _id: record._id,
+        name: record.name,
+        fileType: record.fileType,
+        size: record.size,
+        status: record.status,
+        createdAt: record.createdAt
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Error checking duplicates', error: error.message });
+    console.error('Error uploading file:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading file'
+    });
   }
 });
 
-// Update record status
-router.patch('/:id/status', auth, async (req, res) => {
+// Download record
+router.get('/:id/download', auth, async (req, res) => {
   try {
-    const { status } = req.body;
-    const record = await Record.findOneAndUpdate(
-      { _id: req.params.id, createdBy: req.user._id },
-      { status },
-      { new: true }
-    );
-    
-    if (!record) {
-      return res.status(404).json({ message: 'Record not found' });
-    }
-    
-    res.json(record);
-  } catch (error) {
-    res.status(500).json({ message: 'Error updating record status', error: error.message });
-  }
-});
-
-// Delete record
-router.delete('/:id', auth, async (req, res) => {
-  try {
-    const record = await Record.findOneAndDelete({
+    const record = await Record.findOne({
       _id: req.params.id,
       createdBy: req.user._id
     });
-    
+
     if (!record) {
-      return res.status(404).json({ message: 'Record not found' });
+      return res.status(404).json({
+        success: false,
+        message: 'Record not found'
+      });
     }
-    
-    res.json({ message: 'Record deleted successfully' });
+
+    if (!fs.existsSync(record.filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found'
+      });
+    }
+
+    res.download(record.filePath, record.originalName);
   } catch (error) {
-    res.status(500).json({ message: 'Error deleting record', error: error.message });
+    console.error('Error downloading file:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error downloading file'
+    });
   }
 });
 
-export default router; 
+// Get single record
+router.get('/:id', auth, async (req, res) => {
+  try {
+    const record = await Record.findOne({
+      _id: req.params.id,
+      createdBy: req.user._id
+    });
+
+    if (!record) {
+      return res.status(404).json({
+        success: false,
+        message: 'Record not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      record: {
+        _id: record._id,
+        name: record.name,
+        fileType: record.fileType,
+        size: record.size,
+        status: record.status,
+        createdAt: record.createdAt,
+        description: record.description,
+        tags: record.tags,
+        accessLevel: record.accessLevel
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching record:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching record'
+    });
+  }
+});
+
+module.exports = router; 

@@ -5,97 +5,71 @@ const Profile = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
-  const [notificationSettings, setNotificationSettings] = useState({
-    emailNotifications: true,
-    duplicateAlerts: true,
-    systemUpdates: true,
-    activitySummary: false
-  });
-  const [activities, setActivities] = useState([]);
-  const [stats, setStats] = useState({
-    totalRecords: 0,
-    duplicatesFound: 0,
-    lastActivity: null
-  });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      // Ensure dates are properly parsed
-      if (parsedUser.createdAt) {
-        parsedUser.createdAt = new Date(parsedUser.createdAt);
-      }
-      if (parsedUser.lastLogin) {
-        parsedUser.lastLogin = new Date(parsedUser.lastLogin);
-      }
-      setUser(parsedUser);
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setIsLoading(false);
+          return;
+        }
 
-      // Fetch user activities
-      fetchUserActivities(parsedUser.id);
-      // Fetch user stats
-      fetchUserStats(parsedUser.id);
-    }
-    setIsLoading(false);
+        const response = await fetch('http://localhost:5000/api/auth/me', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch user data');
+        }
+
+        const userData = await response.json();
+        setUser(userData.user);
+        localStorage.setItem('user', JSON.stringify(userData.user));
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load profile data",
+        });
+        // Fallback to localStorage data
+        const userData = localStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
   }, []);
-
-  const fetchUserActivities = async (userId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/user/${userId}/activities`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setActivities(data.activities || []);
-      }
-    } catch (error) {
-      console.error('Failed to fetch activities:', error);
-    }
-  };
-
-  const fetchUserStats = async (userId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/user/${userId}/stats`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setStats(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-    }
-  };
-
-  const formatDate = (date) => {
-    if (!date) return 'Not available';
-    return new Date(date).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
+    
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       toast({
         variant: "destructive",
         title: "Error",
         description: "New passwords do not match",
-        duration: 3000,
+      });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Password must be at least 6 characters long",
       });
       return;
     }
@@ -113,14 +87,15 @@ const Profile = () => {
         })
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Failed to change password');
+        throw new Error(data.message || 'Failed to change password');
       }
 
       toast({
         title: "Success",
         description: "Password changed successfully",
-        duration: 3000,
       });
       setShowChangePassword(false);
       setPasswordForm({
@@ -133,50 +108,7 @@ const Profile = () => {
         variant: "destructive",
         title: "Error",
         description: error.message || "Failed to change password",
-        duration: 3000,
       });
-    }
-  };
-
-  const handleNotificationChange = async (setting) => {
-    setNotificationSettings(prev => ({
-      ...prev,
-      [setting]: !prev[setting]
-    }));
-
-    try {
-      const response = await fetch('http://localhost:5000/api/user/notifications', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          [setting]: !notificationSettings[setting]
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update notification settings');
-      }
-
-      toast({
-        title: "Success",
-        description: "Notification settings updated",
-        duration: 3000,
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "Failed to update notification settings",
-        duration: 3000,
-      });
-      // Revert the change if the API call fails
-      setNotificationSettings(prev => ({
-        ...prev,
-        [setting]: !prev[setting]
-      }));
     }
   };
 
@@ -226,18 +158,6 @@ const Profile = () => {
                       <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
                       <p className="text-gray-900 font-medium">{user?.email || 'Not provided'}</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Account Created</label>
-                      <p className="text-gray-900 font-medium">
-                        {formatDate(user?.createdAt)}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-500 mb-1">Last Login</label>
-                      <p className="text-gray-900 font-medium">
-                        {formatDate(user?.lastLogin)}
-                      </p>
-                    </div>
                   </div>
                 </section>
 
@@ -245,42 +165,12 @@ const Profile = () => {
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
                   <div className="bg-gray-50 rounded-lg p-6">
                     <div className="space-y-4">
-                      {activities.length > 0 ? (
-                        activities.map((activity, index) => (
-                          <div key={index} className="flex items-center justify-between py-3 border-b border-gray-200">
-                            <div className="flex items-center space-x-3">
-                              <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                              <span className="text-gray-900">{activity.description}</span>
-                            </div>
-                            <span className="text-sm text-gray-500">{formatDate(activity.timestamp)}</span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-center text-gray-500">
-                          No recent activity
+                      <div className="flex items-center justify-between py-3 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-2 h-2 rounded-full bg-blue-600"></div>
+                          <span className="text-gray-900">Logged in successfully</span>
                         </div>
-                      )}
-                    </div>
-                  </div>
-                </section>
-
-                <section className="mt-8">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Usage Statistics</h2>
-                  <div className="bg-gray-50 rounded-lg p-6">
-                    <div className="grid grid-cols-3 gap-6">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{stats.totalRecords}</div>
-                        <div className="text-sm text-gray-500">Total Records</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">{stats.duplicatesFound}</div>
-                        <div className="text-sm text-gray-500">Duplicates Found</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {stats.lastActivity ? formatDate(stats.lastActivity) : 'N/A'}
-                        </div>
-                        <div className="text-sm text-gray-500">Last Activity</div>
+                        <span className="text-sm text-gray-500">Just now</span>
                       </div>
                     </div>
                   </div>
@@ -360,64 +250,6 @@ const Profile = () => {
                             </button>
                           </div>
                         </form>
-                      )}
-
-                      <button
-                        onClick={() => setShowNotificationSettings(!showNotificationSettings)}
-                        className="w-full px-4 py-3 bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors flex items-center justify-between shadow-sm"
-                      >
-                        <span className="font-medium">Notification Settings</span>
-                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-
-                      {showNotificationSettings && (
-                        <div className="mt-4 space-y-4 bg-white p-4 rounded-lg border border-gray-200">
-                          <div className="space-y-4">
-                            {[
-                              {
-                                id: 'emailNotifications',
-                                title: 'Email Notifications',
-                                description: 'Receive email updates about your account'
-                              },
-                              {
-                                id: 'duplicateAlerts',
-                                title: 'Duplicate Alerts',
-                                description: 'Get notified when duplicates are found'
-                              },
-                              {
-                                id: 'systemUpdates',
-                                title: 'System Updates',
-                                description: 'Stay informed about system changes'
-                              },
-                              {
-                                id: 'activitySummary',
-                                title: 'Activity Summary',
-                                description: 'Weekly summary of your activity'
-                              }
-                            ].map((setting) => (
-                              <div key={setting.id} className="flex items-center justify-between py-2">
-                                <div>
-                                  <h3 className="text-sm font-medium text-gray-900">{setting.title}</h3>
-                                  <p className="text-sm text-gray-500">{setting.description}</p>
-                                </div>
-                                <button
-                                  onClick={() => handleNotificationChange(setting.id)}
-                                  className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                                    notificationSettings[setting.id] ? 'bg-blue-600' : 'bg-gray-200'
-                                  }`}
-                                >
-                                  <span
-                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                                      notificationSettings[setting.id] ? 'translate-x-5' : 'translate-x-0'
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
                       )}
                     </div>
                   </div>

@@ -1,154 +1,66 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   Search,
-  Filter,
   RefreshCw,
   CheckCircle,
-  XCircle,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
   MoreVertical,
   Settings2,
-  ArrowUpDown,
-  Download,
-  Upload,
-  Trash2,
-  FileText,
-  PieChart
 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "../components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
-import { toast } from "../components/ui/use-toast";
-import { Skeleton } from "../components/ui/skeleton";
+import Loading from "../components/ui/loading";
 import { cn } from "../lib/utils";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "../components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "../components/ui/card";
+import { useToast } from "../hooks/use-toast";
+import { getDuplicates } from '../services/dataService';
 
 const DataDuplication = () => {
-  const [duplicates, setDuplicates] = useState([
-    {
-      id: 1,
-      matchPercentage: 95,
-      timestamp: '2024-01-15 14:30',
-      records: [
-        {
-          name: 'John Smith',
-          email: 'john.smith@email.com',
-          phone: '+1 (555) 123-4567',
-          address: '123 Main St, New York, NY 10001',
-          created: '2024-01-10'
-        },
-        {
-          name: 'John A Smith',
-          email: 'john.smith@email.com',
-          phone: '+1 (555) 123-4567',
-          address: '123 Main Street, New York, NY 10001',
-          created: '2024-01-12'
-        }
-      ]
-    },
-    {
-      id: 2,
-      matchPercentage: 87,
-      timestamp: '2024-01-15 13:45',
-      records: [
-        {
-          name: 'Sarah Johnson',
-          email: 'sarah.j@company.com',
-          phone: '+1 (555) 987-6543',
-          address: '456 Park Ave, Boston, MA 02108',
-          created: '2024-01-08'
-        },
-        {
-          name: 'Sarah Johnson',
-          email: 'sarah.johnson@company.com',
-          phone: '+1 (555) 987-6543',
-          address: '456 Park Avenue, Boston, MA 02108',
-          created: '2024-01-14'
-        }
-      ]
-    }
-  ]);
-
+  const [duplicates, setDuplicates] = useState([]);
   const [sortBy, setSortBy] = useState('matchConfidence');
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
   const [expandedGroups, setExpandedGroups] = useState(new Set());
   const [loading, setLoading] = useState(true);
-
-  // New state for additional functionality
-  const [selectedDuplicates, setSelectedDuplicates] = useState(new Set());
-  const [filterCriteria, setFilterCriteria] = useState({
-    confidence: 'all', // all, high, medium, low
-    dateRange: 'all', // all, today, week, month
-    status: 'all', // all, pending, resolved, ignored
-  });
-  const [showStats, setShowStats] = useState(false);
-  const [view, setView] = useState('list'); // list, grid
-  
-  // Statistics calculation
-  const stats = {
-    total: duplicates.length,
-    highConfidence: duplicates.filter(d => d.matchPercentage >= 90).length,
-    mediumConfidence: duplicates.filter(d => d.matchPercentage >= 70 && d.matchPercentage < 90).length,
-    lowConfidence: duplicates.filter(d => d.matchPercentage < 70).length,
-  };
+  const { toast } = useToast();
+  const location = useLocation();
 
   useEffect(() => {
-    // Simulate loading data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    const fetchDuplicates = async () => {
+      try {
+        const response = await getDuplicates(searchQuery, sortBy === 'matchConfidence' ? 0.8 : 0.6);
+        setDuplicates(response.duplicates || []);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "Failed to fetch duplicates",
+          duration: 3000,
+        });
+        setDuplicates([]);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  // Handle search
+    fetchDuplicates();
+  }, [location.state, toast, searchQuery, sortBy]);
+
   const handleSearch = (query) => {
     setSearchQuery(query);
+    setLoading(true);
   };
 
-  // Handle filter
-  const handleFilter = (status) => {
-    setFilterStatus(status);
-  };
-
-  // Handle sort
   const handleSort = (key) => {
     setSortBy(key);
-    // Simulate sorting delay
     setLoading(true);
-    setTimeout(() => setLoading(false), 500);
   };
 
-  // Handle group expansion
   const toggleGroup = (id) => {
     setExpandedGroups(prev => {
       const newSet = new Set(prev);
@@ -161,228 +73,88 @@ const DataDuplication = () => {
     });
   };
 
-  // Handle merge
-  const handleMerge = (duplicateId) => {
-    setLoading(true);
-    setTimeout(() => {
-      setDuplicates(duplicates.filter(d => d.id !== duplicateId));
-      setLoading(false);
-      toast({
-        title: "Records Merged",
-        description: "The duplicate records have been successfully merged.",
-      });
-    }, 1000);
-  };
-
-  // Handle ignore
-  const handleIgnore = (duplicateId) => {
-    setLoading(true);
-    setTimeout(() => {
-      setDuplicates(duplicates.filter(d => d.id !== duplicateId));
-      setLoading(false);
-      toast({
-        title: "Duplicates Ignored",
-        description: "The duplicate records have been marked as ignored.",
-      });
-    }, 500);
-  };
-
-  // Handle delete
-  const handleDelete = (duplicateId) => {
-    if (window.confirm('Are you sure you want to delete this duplicate group?')) {
+  const handleMerge = async (duplicateId) => {
+    try {
       setLoading(true);
-      setTimeout(() => {
-        setDuplicates(duplicates.filter(d => d.id !== duplicateId));
-        setLoading(false);
-        toast({
-          title: "Records Deleted",
-          description: "The duplicate records have been deleted.",
-          variant: "destructive",
-        });
-      }, 500);
+      // TODO: Implement merge API call
+      setDuplicates(prev => prev.filter(d => d._id !== duplicateId));
+      toast({
+        title: "Success",
+        description: "Records merged successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to merge records",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Handle configure rules
+  const handleIgnore = async (duplicateId) => {
+    try {
+      setLoading(true);
+      // TODO: Implement ignore API call
+      setDuplicates(prev => prev.filter(d => d._id !== duplicateId));
+      toast({
+        title: "Success",
+        description: "Records marked as ignored",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to ignore records",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (duplicateId) => {
+    if (!window.confirm('Are you sure you want to delete these records?')) {
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // TODO: Implement delete API call
+      setDuplicates(prev => prev.filter(d => d._id !== duplicateId));
+      toast({
+        title: "Success",
+        description: "Records deleted successfully",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to delete records",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleConfigureRules = () => {
+    // TODO: Implement rules configuration
     toast({
-      title: "Configure Rules",
-      description: "Opening duplicate detection rules configuration...",
+      title: "Coming Soon",
+      description: "Rules configuration will be available soon",
     });
   };
 
-  // Filter duplicates
+  // Filter duplicates based on search query
   const filteredDuplicates = duplicates.filter(duplicate => 
-    duplicate.records.some(record => 
-      Object.values(record).some(value => 
-        value.toString().toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    )
-  );
-
-  // Bulk actions
-  const handleBulkAction = (action) => {
-    setLoading(true);
-    const selectedIds = Array.from(selectedDuplicates);
-    
-    setTimeout(() => {
-      switch (action) {
-        case 'merge':
-          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
-          toast({
-            title: "Bulk Merge Complete",
-            description: `Successfully merged ${selectedIds.length} duplicate groups.`,
-          });
-          break;
-        case 'ignore':
-          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
-          toast({
-            title: "Bulk Ignore Complete",
-            description: `Ignored ${selectedIds.length} duplicate groups.`,
-          });
-          break;
-        case 'delete':
-          setDuplicates(prev => prev.filter(d => !selectedIds.includes(d.id)));
-          toast({
-            title: "Bulk Delete Complete",
-            description: `Deleted ${selectedIds.length} duplicate groups.`,
-            variant: "destructive",
-          });
-          break;
-      }
-      setSelectedDuplicates(new Set());
-      setLoading(false);
-    }, 1000);
-  };
-
-  // Export functionality
-  const handleExport = (format) => {
-    setLoading(true);
-    setTimeout(() => {
-      toast({
-        title: "Export Complete",
-        description: `Duplicates exported as ${format.toUpperCase()}.`,
-      });
-      setLoading(false);
-    }, 1000);
-  };
-
-  // Apply filters
-  const applyFilters = (duplicates) => {
-    let filtered = [...duplicates];
-    
-    // Confidence filter
-    if (filterCriteria.confidence !== 'all') {
-      filtered = filtered.filter(d => {
-        switch (filterCriteria.confidence) {
-          case 'high':
-            return d.matchPercentage >= 90;
-          case 'medium':
-            return d.matchPercentage >= 70 && d.matchPercentage < 90;
-          case 'low':
-            return d.matchPercentage < 70;
-          default:
-            return true;
-        }
-      });
-    }
-
-    // Date range filter
-    if (filterCriteria.dateRange !== 'all') {
-      const now = new Date();
-      filtered = filtered.filter(d => {
-        const date = new Date(d.timestamp);
-        switch (filterCriteria.dateRange) {
-          case 'today':
-            return date.toDateString() === now.toDateString();
-          case 'week':
-            const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
-            return date >= weekAgo;
-          case 'month':
-            const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
-            return date >= monthAgo;
-          default:
-            return true;
-        }
-      });
-    }
-
-    return filtered;
-  };
-
-  // Render statistics
-  const renderStats = () => (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-500">Total Duplicates</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{stats.total}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-500">High Confidence</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-red-600">{stats.highConfidence}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-500">Medium Confidence</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-yellow-600">{stats.mediumConfidence}</div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-500">Low Confidence</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-green-600">{stats.lowConfidence}</div>
-        </CardContent>
-      </Card>
-    </div>
+    !searchQuery || 
+    duplicate.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    duplicate.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    duplicate.phone?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
-    return (
-      <div className="p-6 max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="space-y-6">
-            <div className="flex gap-4">
-              <Skeleton className="h-10 w-64" />
-              <Skeleton className="h-10 w-48" />
-              <Skeleton className="h-10 w-10" />
-            </div>
-            <div className="space-y-4">
-              {[1, 2].map((i) => (
-                <div key={i} className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-6 w-32" />
-                    <div className="flex gap-2">
-                      <Skeleton className="h-9 w-24" />
-                      <Skeleton className="h-9 w-20" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-6">
-                    <Skeleton className="h-48" />
-                    <Skeleton className="h-48" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   return (
@@ -394,51 +166,19 @@ const DataDuplication = () => {
             Manage and resolve duplicate records in your database
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowStats(!showStats)}
-            className="flex items-center gap-2"
-          >
-            <PieChart className="w-4 h-4" />
-            {showStats ? 'Hide Stats' : 'Show Stats'}
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => handleExport('csv')}>
-                <FileText className="w-4 h-4 mr-2" />
-                Export as CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('json')}>
-                <FileText className="w-4 h-4 mr-2" />
-                Export as JSON
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <Button
-            onClick={handleConfigureRules}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-          >
-            <Settings2 className="w-4 h-4" />
-            Configure Rules
-          </Button>
-        </div>
+        <Button
+          onClick={handleConfigureRules}
+          variant="outline"
+          className="flex items-center gap-2"
+        >
+          <Settings2 className="w-4 h-4" />
+          Configure Rules
+        </Button>
       </div>
-
-      {showStats && renderStats()}
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="p-4 border-b border-gray-200">
-          <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex gap-4 items-center">
             <div className="flex-1 max-w-sm">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -451,82 +191,28 @@ const DataDuplication = () => {
                 />
               </div>
             </div>
-            
-            <Select 
-              value={filterCriteria.confidence}
-              onValueChange={(value) => setFilterCriteria(prev => ({ ...prev, confidence: value }))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Confidence" />
+            <Select value={sortBy} onValueChange={handleSort}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Confidence</SelectItem>
-                <SelectItem value="high">High (≥90%)</SelectItem>
-                <SelectItem value="medium">Medium (70-89%)</SelectItem>
-                <SelectItem value="low">Low (&lt;70%)</SelectItem>
+                <SelectItem value="matchConfidence">Match Confidence</SelectItem>
+                <SelectItem value="timestamp">Date Detected</SelectItem>
+                <SelectItem value="name">Name</SelectItem>
               </SelectContent>
             </Select>
-
-            <Select 
-              value={filterCriteria.dateRange}
-              onValueChange={(value) => setFilterCriteria(prev => ({ ...prev, dateRange: value }))}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">Past Week</SelectItem>
-                <SelectItem value="month">Past Month</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Button
               variant="outline"
               size="icon"
               onClick={() => {
                 setLoading(true);
-                setTimeout(() => setLoading(false), 1000);
+                fetchDuplicates();
               }}
               className="shrink-0"
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
-
-          {selectedDuplicates.size > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">
-                  {selectedDuplicates.size} items selected
-                </span>
-                <Button
-                  variant="default"
-                  size="sm"
-                  onClick={() => handleBulkAction('merge')}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  Merge Selected
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('ignore')}
-                >
-                  Ignore Selected
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleBulkAction('delete')}
-                  className="text-red-600 hover:text-red-700"
-                >
-                  Delete Selected
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="divide-y divide-gray-200">
@@ -541,43 +227,29 @@ const DataDuplication = () => {
               </p>
             </div>
           ) : (
-            applyFilters(filteredDuplicates).map((duplicate) => (
-              <div key={duplicate.id} className="p-6">
+            filteredDuplicates.map((duplicate) => (
+              <div key={duplicate._id} className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedDuplicates.has(duplicate.id)}
-                      onChange={(e) => {
-                        const newSelected = new Set(selectedDuplicates);
-                        if (e.target.checked) {
-                          newSelected.add(duplicate.id);
-                        } else {
-                          newSelected.delete(duplicate.id);
-                        }
-                        setSelectedDuplicates(newSelected);
-                      }}
-                      className="h-4 w-4 text-blue-600 rounded border-gray-300"
-                    />
                     <span className={cn(
                       'px-3 py-1 rounded-full text-sm font-medium',
-                      duplicate.matchPercentage >= 90 
+                      duplicate.duplicateScore >= 0.9 
                         ? 'bg-red-100 text-red-800'
-                        : duplicate.matchPercentage >= 70
+                        : duplicate.duplicateScore >= 0.8
                         ? 'bg-yellow-100 text-yellow-800'
                         : 'bg-green-100 text-green-800'
                     )}>
-                      {duplicate.matchPercentage}% Match
+                      {Math.round(duplicate.duplicateScore * 100)}% Match
                     </span>
                     <span className="text-sm text-gray-500">
-                      Detected {duplicate.timestamp}
+                      Created {new Date(duplicate.createdAt).toLocaleDateString()}
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       variant="default"
                       size="sm"
-                      onClick={() => handleMerge(duplicate.id)}
+                      onClick={() => handleMerge(duplicate._id)}
                       className="bg-blue-600 hover:bg-blue-700"
                     >
                       Merge Records
@@ -585,7 +257,7 @@ const DataDuplication = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleIgnore(duplicate.id)}
+                      onClick={() => handleIgnore(duplicate._id)}
                     >
                       Ignore
                     </Button>
@@ -596,13 +268,9 @@ const DataDuplication = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleExport('csv')}>
-                          Export Group
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-red-600"
-                          onClick={() => handleDelete(duplicate.id)}
+                          onClick={() => handleDelete(duplicate._id)}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -610,42 +278,29 @@ const DataDuplication = () => {
                     </DropdownMenu>
                   </div>
                 </div>
-
                 <div className="grid grid-cols-2 gap-6">
-                  {duplicate.records.map((record, index) => (
-                    <div 
-                      key={index}
-                      className={cn(
-                        'p-4 rounded-lg border',
-                        index === 0 
-                          ? 'border-blue-200 bg-blue-50'
-                          : 'border-gray-200 bg-gray-50'
-                      )}
-                    >
-                      <div className="space-y-3">
-                        <div>
-                          <label className="text-sm text-gray-500">Name</label>
-                          <div className="font-medium">{record.name}</div>
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-500">Email</label>
-                          <div className="font-medium">{record.email}</div>
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-500">Phone</label>
-                          <div className="font-medium">{record.phone}</div>
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-500">Address</label>
-                          <div className="font-medium">{record.address}</div>
-                        </div>
-                        <div>
-                          <label className="text-sm text-gray-500">Created</label>
-                          <div className="font-medium">{record.created}</div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Original Record</h3>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <dt className="text-gray-500">Name</dt>
+                      <dd className="text-gray-900">{duplicate.name}</dd>
+                      <dt className="text-gray-500">Email</dt>
+                      <dd className="text-gray-900">{duplicate.email}</dd>
+                      <dt className="text-gray-500">Phone</dt>
+                      <dd className="text-gray-900">{duplicate.phone}</dd>
+                    </dl>
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 mb-2">Duplicate Record</h3>
+                    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                      <dt className="text-gray-500">Name</dt>
+                      <dd className="text-gray-900">{duplicate.duplicateOf?.name}</dd>
+                      <dt className="text-gray-500">Email</dt>
+                      <dd className="text-gray-900">{duplicate.duplicateOf?.email}</dd>
+                      <dt className="text-gray-500">Phone</dt>
+                      <dd className="text-gray-900">{duplicate.duplicateOf?.phone}</dd>
+                    </dl>
+                  </div>
                 </div>
               </div>
             ))
@@ -656,25 +311,4 @@ const DataDuplication = () => {
   );
 };
 
-const RecordDetails = ({ record }) => (
-  <div className="space-y-2">
-    <div>
-      <span className="font-medium">Name:</span> {record.name}
-    </div>
-    <div>
-      <span className="font-medium">Email:</span> {record.email}
-    </div>
-    <div>
-      <span className="font-medium">Phone:</span> {record.phone || 'N/A'}
-    </div>
-    <div>
-      <span className="font-medium">Address:</span> {record.address || 'N/A'}
-    </div>
-    <div>
-      <span className="font-medium">Created:</span>{' '}
-      {new Date(record.createdAt).toLocaleDateString()}
-    </div>
-  </div>
-);
-
-export default DataDuplication; 
+export default DataDuplication;

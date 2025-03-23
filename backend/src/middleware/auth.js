@@ -1,25 +1,59 @@
-import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-export const auth = async (req, res, next) => {
+/**
+ * @typedef {import('express').Request} ExpressRequest
+ * @typedef {import('express').Response} Response
+ * @typedef {import('express').NextFunction} NextFunction
+ * 
+ * @typedef {Object} AuthRequest
+ * @property {string} token
+ * @property {import('../models/User').User} user
+ * 
+ * @typedef {ExpressRequest & AuthRequest} Request
+ */
+
+/**
+ * Authentication middleware
+ * @param {Request} req 
+ * @param {Response} res 
+ * @param {NextFunction} next 
+ */
+const auth = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required'
+      });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({ _id: decoded.userId });
-
-    if (!user) {
-      throw new Error();
+    if (!decoded || typeof decoded !== 'object') {
+      throw new Error('Invalid token');
     }
 
-    req.user = user;
+    const user = await User.findOne({ _id: decoded._id });
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     req.token = token;
+    req.user = user;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Please authenticate' });
+    console.error('Auth error:', error);
+    res.status(401).json({
+      success: false,
+      message: 'Authentication failed'
+    });
   }
-}; 
+};
+
+module.exports = { auth }; 

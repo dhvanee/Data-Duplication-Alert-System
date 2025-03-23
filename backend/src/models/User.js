@@ -1,57 +1,75 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Name is required'],
-    trim: true,
-    minlength: [2, 'Name must be at least 2 characters long']
+    required: true,
+    trim: true
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
+    required: true,
     unique: true,
     trim: true,
-    lowercase: true,
-    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
+    lowercase: true
   },
   password: {
     type: String,
-    required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters long']
+    required: true,
+    minlength: 6
   },
   notifications: {
-    emailNotifications: {
+    email: {
       type: Boolean,
       default: true
     },
-    duplicateAlerts: {
+    web: {
       type: Boolean,
       default: true
-    },
-    systemUpdates: {
-      type: Boolean,
-      default: true
-    },
-    activitySummary: {
-      type: Boolean,
-      default: false
     }
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    immutable: true
   },
   lastLogin: {
     type: Date,
-    default: Date.now
+    default: null
   }
 }, {
   timestamps: true
 });
 
-// Remove the duplicate index declaration since we already have unique: true in the email field
-// userSchema.index({ email: 1 }, { unique: true });
+// Hash password before saving
+userSchema.pre('save', async function(next) {
+  const user = this;
+  if (user.isModified('password')) {
+    user.password = await bcrypt.hash(user.password, 10);
+  }
+  next();
+});
 
-export default mongoose.model('User', userSchema); 
+// Generate auth token
+userSchema.methods.generateAuthToken = function() {
+  const user = this;
+  const token = jwt.sign(
+    { _id: user._id.toString() },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
+  return token;
+};
+
+// Check password
+userSchema.methods.checkPassword = async function(password) {
+  return bcrypt.compare(password, this.password);
+};
+
+// Remove sensitive data when converting to JSON
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  delete user.password;
+  return user;
+};
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User; 
