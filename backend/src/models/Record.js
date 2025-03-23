@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 const recordSchema = new mongoose.Schema({
   name: {
@@ -6,44 +6,54 @@ const recordSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
-  email: {
+  originalName: {
+    type: String,
+    required: true
+  },
+  fileType: {
     type: String,
     required: true,
-    trim: true,
-    lowercase: true
+    enum: ['XLSX', 'XLS', 'CSV']
   },
-  phone: {
+  filePath: {
+    type: String,
+    required: true
+  },
+  size: {
+    type: String,
+    required: true
+  },
+  description: {
     type: String,
     trim: true
   },
-  address: {
+  tags: [{
     type: String,
     trim: true
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
-  updatedAt: {
-    type: Date,
-    default: Date.now
+  }],
+  accessLevel: {
+    type: String,
+    enum: ['private', 'public', 'shared'],
+    default: 'private'
   },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'duplicate'],
-    default: 'active'
-  },
-  duplicateOf: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Record',
-    default: null
+    enum: ['pending', 'verified', 'duplicate'],
+    default: 'pending'
   },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
   }
+}, {
+  timestamps: true
 });
+
+// Create indexes for faster duplicate checking
+recordSchema.index({ email: 1, createdBy: 1 });
+recordSchema.index({ phone: 1, createdBy: 1 });
+recordSchema.index({ name: 1, createdBy: 1 });
 
 // Update the updatedAt timestamp before saving
 recordSchema.pre('save', function(next) {
@@ -51,4 +61,6 @@ recordSchema.pre('save', function(next) {
   next();
 });
 
-export const Record = mongoose.model('Record', recordSchema); 
+const Record = mongoose.model('Record', recordSchema);
+
+module.exports = { Record }; 

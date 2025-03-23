@@ -3,22 +3,24 @@ import { Link } from 'react-router-dom';
 
 const Landing = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
       <nav className="border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             <Link to="/" className="flex items-center space-x-2">
-              <svg className="w-8 h-8 text-blue-600" viewBox="0 0 24 24" fill="none">
+              <svg className="w-8 h-8 text-primary" viewBox="0 0 24 24" fill="none">
                 <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="2"/>
                 <path d="M9 12L11 14L15 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
-              <span className="text-xl font-semibold text-gray-900">DDAS</span>
+              <span className="text-xl font-semibold text-foreground">DDAS</span>
             </Link>
             <div className="flex items-center space-x-4">
-              <Link to="/help" className="text-gray-600 hover:text-gray-900">Help</Link>
-              <Link to="/sign-in" className="text-blue-600 hover:text-blue-700">Sign in</Link>
-              <Link to="/sign-up" className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700">
+              <Link to="/signin" className="text-muted-foreground hover:text-foreground">Sign in</Link>
+              <Link 
+                to="/signup" 
+                className="inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary hover:bg-primary/90"
+              >
                 Sign up
               </Link>
             </div>
@@ -29,32 +31,32 @@ const Landing = () => {
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
         <div className="text-center">
-          <div className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-blue-50 text-blue-600 mb-8">
+          <div className="inline-flex items-center px-4 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary mb-8">
             <span className="mr-2">•</span>
             Eliminate Duplicate Data
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
+          <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl md:text-6xl">
             <span className="block">Manage Data With Intelligence</span>
-            <span className="block text-blue-600">and Precision</span>
+            <span className="block text-primary">and Precision</span>
           </h1>
-          <p className="mt-3 max-w-md mx-auto text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
+          <p className="mt-3 max-w-md mx-auto text-base text-muted-foreground sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
             Detect and remove duplicate data automatically, saving storage and improving data quality with our powerful management system.
           </p>
           <div className="mt-5 max-w-md mx-auto sm:flex sm:justify-center md:mt-8">
             <div className="rounded-md shadow">
               <Link
-                to="/dashboard"
-                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10"
+                to="/signup"
+                className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-primary hover:bg-primary/90 md:py-4 md:text-lg md:px-10"
               >
                 Get Started
               </Link>
             </div>
             <div className="mt-3 sm:mt-0 sm:ml-3">
               <Link
-                to="/help"
-                className="w-full flex items-center justify-center px-8 py-3 border border-gray-200 text-base font-medium rounded-lg text-gray-600 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
+                to="/signin"
+                className="w-full flex items-center justify-center px-8 py-3 border border-gray-300 text-base font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 md:py-4 md:text-lg md:px-10"
               >
-                Learn More
+                Sign In
               </Link>
             </div>
           </div>

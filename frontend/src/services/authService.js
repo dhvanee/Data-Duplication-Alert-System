@@ -14,11 +14,17 @@ let DEMO_USERS = [
 
 export const signup = async (name, email, password) => {
   try {
+
+    const response = await fetch(`${API_ENDPOINTS.LOGIN}/register`, {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+
     const response = await fetch(`${API_URL}/auth/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+
       body: JSON.stringify({ name, email, password })
     });
 
@@ -41,11 +47,17 @@ export const signup = async (name, email, password) => {
 
 export const login = async (email, password) => {
   try {
+
+    const response = await fetch(`${API_ENDPOINTS.LOGIN}/login`, {
+      method: 'POST',
+      headers: API_CONFIG.headers,
+
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
+
       body: JSON.stringify({ email, password })
     });
 
