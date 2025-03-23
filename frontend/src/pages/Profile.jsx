@@ -31,24 +31,58 @@ const Profile = () => {
         }
 
         const userData = await response.json();
+
         setUser(userData.user);
         localStorage.setItem('user', JSON.stringify(userData.user));
+
+        // Parse dates
+        if (userData.createdAt) {
+          userData.createdAt = new Date(userData.createdAt);
+        }
+        if (userData.lastLogin) {
+          userData.lastLogin = new Date(userData.lastLogin);
+        }
+        
+        setUser(userData);
+        // Update localStorage with fresh data
+        localStorage.setItem('user', JSON.stringify(userData));
+
       } catch (error) {
         console.error('Error fetching user data:', error);
         toast({
           variant: "destructive",
           title: "Error",
           description: "Failed to load profile data",
+
+
+          duration: 3000,
+
         });
         // Fallback to localStorage data
         const userData = localStorage.getItem('user');
         if (userData) {
+
           setUser(JSON.parse(userData));
+
+          const parsedUser = JSON.parse(userData);
+          if (parsedUser.createdAt) {
+            parsedUser.createdAt = new Date(parsedUser.createdAt);
+          }
+          if (parsedUser.lastLogin) {
+            parsedUser.lastLogin = new Date(parsedUser.lastLogin);
+          }
+          setUser(parsedUser);
+
         }
       } finally {
         setIsLoading(false);
       }
     };
+
+
+    fetchUserData();
+  }, []);
+
 
     fetchUserData();
   }, []);

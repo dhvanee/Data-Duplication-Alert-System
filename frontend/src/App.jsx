@@ -12,7 +12,11 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import SignIn from './pages/SignIn';
 import SignUp from './pages/SignUp';
+
 import Landing from './pages/Landing';
+
+import GetStarted from './pages/GetStarted';
+
 import PrivateRoute from './components/PrivateRoute';
 
 const queryClient = new QueryClient();
@@ -23,7 +27,10 @@ const App = () => {
       <Router>
         <Routes>
           {/* Public Routes */}
+
           <Route path="/" element={<Landing />} />
+          <Route path="/" element={<GetStarted />} />
+
           <Route path="/signin" element={
             localStorage.getItem('token') ? <Navigate to="/dashboard" /> : <SignIn />
           } />

@@ -1,6 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { API_ENDPOINTS, API_CONFIG, checkServerHealth } from '../config/api';
+
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
 import { useToast } from '../components/ui/use-toast';
 import { signup } from '../services/authService';
 import { Input } from '../components/ui/input';
@@ -16,6 +21,7 @@ const SignUp = () => {
     confirmPassword: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+
   const [serverStatus, setServerStatus] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -36,6 +42,11 @@ const SignUp = () => {
     checkServer();
   }, [toast]);
 
+
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevData => ({
@@ -47,6 +58,7 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+
     if (!serverStatus) {
       toast({
         variant: "destructive",
@@ -55,6 +67,8 @@ const SignUp = () => {
       });
       return;
     }
+
+
 
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -75,8 +89,12 @@ const SignUp = () => {
         description: "Account created successfully",
       });
 
+
       // After successful signup, redirect to dashboard
       navigate('/dashboard');
+
+      navigate('/app/dashboard');
+
     } catch (error) {
       console.error('Signup error:', error);
       toast({
@@ -93,6 +111,7 @@ const SignUp = () => {
     <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-card p-8 rounded-lg shadow-lg">
         <div>
+
           <div className="flex justify-center">
             <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
               <svg className="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -100,11 +119,20 @@ const SignUp = () => {
               </svg>
             </div>
           </div>
+
+
           <h2 className="mt-6 text-center text-3xl font-bold tracking-tight">
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-muted-foreground">
+
             to start using our services
+
+            Or{' '}
+            <Link to="/signin" className="font-medium text-primary hover:text-primary/90">
+              sign in to your account
+            </Link>
+
           </p>
         </div>
 
@@ -178,6 +206,7 @@ const SignUp = () => {
             )}
           </Button>
 
+
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t"></div>
@@ -214,6 +243,8 @@ const SignUp = () => {
               Facebook
             </Button>
           </div>
+
+
         </form>
 
         <div className="text-center">
